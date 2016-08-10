@@ -1,3 +1,20 @@
+plugins {
+    id "java"
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+ext {
+    junitVersion = "4.12"
+}
+
+dependencies {
+    testCompile "junit:junit:$junitVersion"
+}
+
 wrapper {
 	gradleVersion = "2.14.1"
 }
