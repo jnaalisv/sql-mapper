@@ -1,5 +1,6 @@
 plugins {
     id "java"
+    id "jacoco"
 }
 
 repositories {
@@ -8,13 +9,45 @@ repositories {
 }
 
 ext {
+    springVersion = "4.3.2.RELEASE"
+    hikariCPVersion = "2.4.7"
+    slf4jVersion = "1.7.21"
+    logbackVersion = "1.1.7"
+    groovyVersion = "2.4.1"
+    h2Version = "1.4.191"
     junitVersion = "4.12"
+    assertJVersion = "3.4.1"
 }
 
 dependencies {
+    compile "org.slf4j:slf4j-api:$slf4jVersion"
+    compile "org.postgresql:postgresql:9.4.1209.jre7"
+    compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final"
+
     testCompile "junit:junit:$junitVersion"
+    testCompile "org.assertj:assertj-core:$assertJVersion"
+    testCompile "com.zaxxer:HikariCP:$hikariCPVersion"
+    testCompile "org.springframework:spring-test:$springVersion"
+    testCompile "org.springframework:spring-context:$springVersion"
+    testCompile "org.springframework:spring-tx:$springVersion"
+    testCompile "org.springframework:spring-jdbc:$springVersion"
+
+    testRuntime "com.h2database:h2:$h2Version"
+    testRuntime "org.codehaus.groovy:groovy:$groovyVersion"
+    testRuntime "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
 }
 
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination "${buildDir}/reports/jacoco/test/html"
+    }
+}
+
+test.finalizedBy jacocoTestReport
+
 wrapper {
-	gradleVersion = "2.14.1"
+    gradleVersion = "2.14.1"
 }
