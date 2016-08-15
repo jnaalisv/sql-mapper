@@ -3,10 +3,12 @@ package org.jnaalisv.sqlmapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public class TypeMapper {
 
@@ -29,6 +31,13 @@ public class TypeMapper {
                 if (object instanceof LocalDate) {
                     LocalDate localDate = (LocalDate) object;
                     return Date.valueOf(localDate);
+                }
+                break;
+
+            case Types.TIME:
+                if (object instanceof LocalTime) {
+                    LocalTime localTime = (LocalTime) object;
+                    return Time.valueOf(localTime);
                 }
                 break;
 
