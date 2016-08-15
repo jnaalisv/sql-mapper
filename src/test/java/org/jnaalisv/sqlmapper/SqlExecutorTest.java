@@ -13,6 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -142,6 +143,7 @@ public class SqlExecutorTest {
     public void updateObject() {
         Product productA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1");
         productA1.setProductCode("AA11");
+        productA1.setIntroduced(LocalDate.now());
 
         Product updatedProduct = sqlExecutor.updateObject(productA1);
 

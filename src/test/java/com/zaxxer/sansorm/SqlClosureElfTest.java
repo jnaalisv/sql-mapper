@@ -13,12 +13,11 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.zaxxer.sansorm.SqlClosureElf.insertListBatched;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Sql({"classpath:test-data.sql"})
@@ -142,6 +141,7 @@ public class SqlClosureElfTest {
     public void updateObject() {
         Product productA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1");
         productA1.setProductCode("AA11");
+        productA1.setIntroduced(LocalDate.now());
 
         Product updatedProduct = SqlClosureElf.updateObject(productA1);
 

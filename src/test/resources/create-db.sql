@@ -6,5 +6,7 @@ CREATE TABLE products (
   product_code varchar(255),
   rank integer not null,
   unit_price decimal(19,2),
-    primary key (id)
+  introduced date,
+  last_modified timestamp,
+  primary key (id)
 );

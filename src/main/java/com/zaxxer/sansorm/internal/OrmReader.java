@@ -182,6 +182,7 @@ public class OrmReader extends OrmBase
          if (columnValue == null) {
             continue;
          }
+
          introspected.set(target, columnName, columnValue);
       }
       return target;

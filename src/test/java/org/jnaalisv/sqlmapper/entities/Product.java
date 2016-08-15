@@ -7,6 +7,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Table(name = "products")
 public class Product {
@@ -29,6 +31,12 @@ public class Product {
     @Column(name = "unit_price")
     private BigDecimal unitPrice;
 
+    @Column(name = "introduced")
+    private LocalDate introduced;
+
+    @Column(name = "last_modified")
+    private LocalDateTime lastModified;
+
     public Product() {}
 
     public Product(long id, String productCode) {
@@ -38,6 +46,7 @@ public class Product {
 
     public Product(String productCode) {
         this.productCode = productCode;
+        this.lastModified = LocalDateTime.now();
     }
 
     public long getId() {
@@ -62,5 +71,17 @@ public class Product {
 
     public ProductType getProductType() {
         return productType;
+    }
+
+    public LocalDate getIntroduced() {
+        return introduced;
+    }
+
+    public LocalDateTime getLastModified() {
+        return lastModified;
+    }
+
+    public void setIntroduced(LocalDate introduced) {
+        this.introduced = introduced;
     }
 }

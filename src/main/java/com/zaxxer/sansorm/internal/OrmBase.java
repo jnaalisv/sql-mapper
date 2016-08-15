@@ -23,6 +23,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -125,6 +127,16 @@ class OrmBase
          }
          if (object instanceof java.util.Date) {
             return new Timestamp(((java.util.Date) object).getTime());
+         }
+         if (object instanceof LocalDateTime) {
+            LocalDateTime localDateTime = (LocalDateTime) object;
+            return Timestamp.valueOf(localDateTime);
+         }
+         break;
+      case Types.DATE:
+         if (object instanceof LocalDate) {
+            LocalDate localDate = (LocalDate) object;
+            return java.sql.Date.valueOf(localDate);
          }
          break;
       case Types.DECIMAL:

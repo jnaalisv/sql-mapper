@@ -35,8 +35,11 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Clob;
+import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -216,6 +219,15 @@ public class Introspected
             }
             else if ("PGobject".equals(columnType.getSimpleName()) && "citext".equalsIgnoreCase(((PGobject) columnValue).getType())) {
                columnValue = ((PGobject) columnValue).getValue();
+            }
+            else if (columnValue instanceof java.sql.Date && fieldType == LocalDate.class) {
+               java.sql.Date date = (Date) columnValue;
+               columnValue = date.toLocalDate();
+            }
+
+            else if (columnValue instanceof java.sql.Timestamp && fieldType == LocalDateTime.class) {
+               java.sql.Timestamp timestamp = (Timestamp) columnValue;
+               columnValue = timestamp.toLocalDateTime();
             }
          }
 
