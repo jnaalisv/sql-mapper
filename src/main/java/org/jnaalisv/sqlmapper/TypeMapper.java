@@ -1,8 +1,12 @@
 package org.jnaalisv.sqlmapper;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Clob;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -57,5 +61,21 @@ public class TypeMapper {
                 break;
         }
         return object;
+    }
+
+    public static String readClob(Clob clob) throws IOException, SQLException {
+
+        try (Reader reader = clob.getCharacterStream()) {
+            StringBuilder stringBuilder = new StringBuilder();
+            char[] charBuffer = new char[1024];
+            while (true) {
+                int charsRead = reader.read(charBuffer);
+                if (charsRead == -1) {
+                    break;
+                }
+                stringBuilder.append(charBuffer, 0, charsRead);
+            }
+            return stringBuilder.toString();
+        }
     }
 }

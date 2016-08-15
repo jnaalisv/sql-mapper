@@ -16,15 +16,12 @@
 
 package com.zaxxer.sansorm.internal;
 
-import java.io.IOException;
-import java.io.Reader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Clob;
 import java.sql.Date;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -48,6 +45,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
+import org.jnaalisv.sqlmapper.TypeMapper;
 import org.postgresql.util.PGobject;
 
 /**
@@ -216,7 +214,7 @@ public class Introspected
                columnValue = fcInfo.enumConstants.get(columnValue);
             }
             else if (columnValue instanceof Clob) {
-               columnValue = readClob((Clob) columnValue);
+               columnValue = TypeMapper.readClob((Clob) columnValue);
             }
             else if ("PGobject".equals(columnType.getSimpleName()) && "citext".equalsIgnoreCase(((PGobject) columnValue).getType())) {
                columnValue = ((PGobject) columnValue).getValue();
@@ -478,23 +476,7 @@ public class Introspected
       }
    }
 
-   private static String readClob(Clob clob) throws IOException, SQLException {
-
-       try (Reader reader = clob.getCharacterStream()) {
-           StringBuilder sb = new StringBuilder();
-           char[] cbuf = new char[1024];
-           while (true) {
-               int rc = reader.read(cbuf);
-               if (rc == -1) {
-                   break;
-               }
-               sb.append(cbuf, 0, rc);
-           }
-           return sb.toString();
-       }
-   }
-
-   private void processColumnAnnotation(FieldColumnInfo fcInfo)
+    private void processColumnAnnotation(FieldColumnInfo fcInfo)
    {
       Field field = fcInfo.field;
 
