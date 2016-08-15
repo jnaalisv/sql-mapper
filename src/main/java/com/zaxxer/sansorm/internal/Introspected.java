@@ -16,18 +16,6 @@
 
 package com.zaxxer.sansorm.internal;
 
-import org.postgresql.util.PGobject;
-
-import javax.persistence.AttributeConverter;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.Table;
-import javax.persistence.Transient;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Field;
@@ -48,6 +36,19 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.persistence.AttributeConverter;
+import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+
+import org.postgresql.util.PGobject;
 
 /**
  * An introspected class.
@@ -477,24 +478,20 @@ public class Introspected
       }
    }
 
-   private String readClob(Clob clob) throws IOException, SQLException
-   {
-      Reader reader = clob.getCharacterStream();
-      try {
-         StringBuilder sb = new StringBuilder();
-         char[] cbuf = new char[1024];
-         while (true) {
-            int rc = reader.read(cbuf);
-            if (rc == -1) {
-               break;
-            }
-            sb.append(cbuf, 0, rc);
-         }
-         return sb.toString();
-      }
-      finally {
-         reader.close();
-      }
+   private static String readClob(Clob clob) throws IOException, SQLException {
+
+       try (Reader reader = clob.getCharacterStream()) {
+           StringBuilder sb = new StringBuilder();
+           char[] cbuf = new char[1024];
+           while (true) {
+               int rc = reader.read(cbuf);
+               if (rc == -1) {
+                   break;
+               }
+               sb.append(cbuf, 0, rc);
+           }
+           return sb.toString();
+       }
    }
 
    private void processColumnAnnotation(FieldColumnInfo fcInfo)
