@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jnaalisv.sqlmapper.TypeMapper;
+
 /**
  * OrmBase
  */

@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.jnaalisv.sqlmapper.TypeMapper;
+
 /**
  * OrmWriter
  */
