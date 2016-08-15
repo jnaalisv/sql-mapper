@@ -19,12 +19,6 @@ public class TypeMapper {
     public static final Object mapSqlType(Object object, int sqlType) {
         switch (sqlType) {
             case Types.TIMESTAMP:
-                if (object instanceof Timestamp) {
-                    return object;
-                }
-                if (object instanceof java.util.Date) {
-                    return new Timestamp(((java.util.Date) object).getTime());
-                }
                 if (object instanceof LocalDateTime) {
                     LocalDateTime localDateTime = (LocalDateTime) object;
                     return Timestamp.valueOf(localDateTime);
