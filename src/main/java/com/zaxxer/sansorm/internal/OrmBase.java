@@ -16,15 +16,9 @@
 
 package com.zaxxer.sansorm.internal;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -56,7 +50,7 @@ class OrmBase
 
       for (int column = paramCount; column > 0; column--) {
          int parameterType = parameterMetaData.getParameterType(column);
-         Object object = mapSqlType(args[column - 1], parameterType);
+         Object object = TypeMapper.mapSqlType(args[column - 1], parameterType);
          stmt.setObject(column, object, parameterType);
       }
    }
@@ -118,41 +112,4 @@ class OrmBase
       return sb.deleteCharAt(sb.length() - 1).toString();
    }
 
-   protected static final Object mapSqlType(Object object, int sqlType)
-   {
-      switch (sqlType) {
-      case Types.TIMESTAMP:
-         if (object instanceof Timestamp) {
-            return object;
-         }
-         if (object instanceof java.util.Date) {
-            return new Timestamp(((java.util.Date) object).getTime());
-         }
-         if (object instanceof LocalDateTime) {
-            LocalDateTime localDateTime = (LocalDateTime) object;
-            return Timestamp.valueOf(localDateTime);
-         }
-         break;
-      case Types.DATE:
-         if (object instanceof LocalDate) {
-            LocalDate localDate = (LocalDate) object;
-            return java.sql.Date.valueOf(localDate);
-         }
-         break;
-      case Types.DECIMAL:
-         if (object instanceof BigInteger) {
-            return new BigDecimal(((BigInteger) object));
-         }
-         break;
-      case Types.SMALLINT:
-         if (object instanceof Boolean) {
-            return (((Boolean) object) ? (short) 1 : (short) 0);
-         }
-         break;
-      default:
-         break;
-      }
-
-      return object;
-   }
 }

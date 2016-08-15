@@ -81,7 +81,7 @@ public class OrmWriter extends OrmBase
          int parameterIndex = 1;
          for (String column : columnNames) {
             int parameterType = parameterTypes[parameterIndex - 1];
-            Object object = mapSqlType(introspected.get(item, column), parameterType);
+            Object object = TypeMapper.mapSqlType(introspected.get(item, column), parameterType);
             if (object != null && !(hasSelfJoinColumn && introspected.isSelfJoinColumn(column))) {
                stmt.setObject(parameterIndex, object, parameterType);
             }
@@ -122,7 +122,7 @@ public class OrmWriter extends OrmBase
          int parameterIndex = 1;
          for (String column : columnNames) {
             int parameterType = parameterTypes[parameterIndex - 1];
-            Object object = mapSqlType(introspected.get(item, column), parameterType);
+            Object object = TypeMapper.mapSqlType(introspected.get(item, column), parameterType);
             if (object != null && !(hasSelfJoinColumn && introspected.isSelfJoinColumn(column))) {
                stmt.setObject(parameterIndex, object, parameterType);
             }
@@ -299,7 +299,7 @@ public class OrmWriter extends OrmBase
       int parameterIndex = 1;
       for (String column : columnNames) {
          int parameterType = parameterTypes[parameterIndex - 1];
-         Object object = mapSqlType(introspected.get(target, column), parameterType);
+         Object object = TypeMapper.mapSqlType(introspected.get(target, column), parameterType);
          if (object != null) {
             stmt.setObject(parameterIndex, object, parameterType);
          }
