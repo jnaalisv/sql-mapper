@@ -12,22 +12,11 @@ package com.zaxxer.sansorm.internal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Introspector
- */
 public final class Introspector {
-    private static final Map<Class<?>, Introspected> descriptorMap;
+    private static final Map<Class<?>, Introspected> descriptorMap = new ConcurrentHashMap<>();
 
-    static {
-        descriptorMap = new ConcurrentHashMap<Class<?>, Introspected>();
-    }
 
-    /**
-     * Private constructor.
-     */
-    private Introspector() {
-        // private constructor
-    }
+    private Introspector() {}
 
     public static Introspected getIntrospected(Class<?> clazz) {
         Introspected introspected = descriptorMap.get(clazz);

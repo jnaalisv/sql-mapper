@@ -47,20 +47,16 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 
-/**
- * An introspected class.
- */
 public class Introspected {
     private Class<?> clazz;
     private String tableName;
 
-    private Map<String, FieldColumnInfo> columnToField;
+    private Map<String, FieldColumnInfo> columnToField = new LinkedHashMap<>();
 
     private FieldColumnInfo selfJoinFCInfo;
 
     private boolean isGeneratedId;
-
-    // We use arrays because iteration is much faster
+    
     private FieldColumnInfo[] idFieldColumnInfos;
     private String[] idColumnNames;
     private String[] columnNames;
@@ -70,17 +66,6 @@ public class Introspected {
     private String[] insertableColumns;
     private String[] updatableColumns;
 
-    // Instance initializer
-    {
-        columnToField = new LinkedHashMap<String, FieldColumnInfo>();
-    }
-
-    /**
-     * Constructor.  Introspect the specified class and cache various annotation
-     * data about it.
-     *
-     * @param clazz the class to introspect
-     */
     Introspected(Class<?> clazz) {
         this.clazz = clazz;
 
@@ -140,11 +125,6 @@ public class Introspected {
         }
     }
 
-    /**
-     * @param target
-     * @param columnName
-     * @return
-     */
     public Object get(Object target, String columnName) {
         FieldColumnInfo fcInfo = columnToField.get(columnName);
         if (fcInfo == null) {
@@ -171,11 +151,6 @@ public class Introspected {
         }
     }
 
-    /**
-     * @param target     The target object.
-     * @param columnName The column name.
-     * @param value      The column value.
-     */
     public void set(Object target, String columnName, Object value) {
         FieldColumnInfo fcInfo = columnToField.get(columnName);
         if (fcInfo == null) {
@@ -222,82 +197,38 @@ public class Introspected {
         }
     }
 
-    /**
-     * Determines whether this class has join columns.
-     *
-     * @return true if this class has @JoinColumn annotations
-     */
     public boolean hasSelfJoinColumn() {
         return selfJoinFCInfo != null;
     }
 
-    /**
-     * Check if the introspected class has a self-join column defined.
-     *
-     * @param columnName the column name to check
-     * @return true if the specified column is a self-join column
-     */
     public boolean isSelfJoinColumn(String columnName) {
         return selfJoinFCInfo.columnName.equals(columnName);
     }
 
-    /**
-     * Get the self-join column, if one is defined for this class.
-     *
-     * @return the self-join column, or null
-     */
     public String getSelfJoinColumn() {
         return (selfJoinFCInfo != null ? selfJoinFCInfo.columnName : null);
     }
 
-    /**
-     * Get all of the columns defined for this introspected class.
-     *
-     * @return and array of column names
-     */
     public String[] getColumnNames() {
         return columnNames;
     }
 
-    /**
-     * Get all of the table names associated with the columns for this introspected class.
-     *
-     * @return an array of column table names
-     */
     public String[] getColumnTableNames() {
         return columnTableNames;
     }
 
-    /**
-     * Get all of the ID columns defined for this introspected class.
-     *
-     * @return and array of column names
-     */
     public String[] getIdColumnNames() {
         return idColumnNames;
     }
 
-    /**
-     * Get all of the columns defined for this introspected class, minus the ID columns.
-     *
-     * @return and array of column names
-     */
     public String[] getColumnsSansIds() {
         return columnsSansIds;
     }
 
-    /**
-     * @return
-     */
     public boolean hasGeneratedId() {
         return isGeneratedId;
     }
 
-    /**
-     * Get the insertable columns for this object.
-     *
-     * @return the insertable columns
-     */
     public String[] getInsertableColumns() {
         if (insertableColumns != null) {
             return insertableColumns;
@@ -321,11 +252,6 @@ public class Introspected {
         return insertableColumns;
     }
 
-    /**
-     * Get the updatable columns for this object.
-     *
-     * @return the updatable columns
-     */
     public String[] getUpdatableColumns() {
         if (updatableColumns != null) {
             return updatableColumns;
@@ -349,32 +275,16 @@ public class Introspected {
         return updatableColumns;
     }
 
-    /**
-     * Is this specified column insertable?
-     *
-     * @param columnName the column name
-     * @return true if insertable, false otherwise
-     */
     public boolean isInsertableColumn(String columnName) {
         FieldColumnInfo fcInfo = columnToField.get(columnName);
         return (fcInfo != null && fcInfo.insertable);
     }
 
-    /**
-     * Is this specified column updatable?
-     *
-     * @param columnName the column name
-     * @return true if updatable, false otherwise
-     */
     public boolean isUpdatableColumn(String columnName) {
         FieldColumnInfo fcInfo = columnToField.get(columnName);
         return (fcInfo != null && fcInfo.updatable);
     }
 
-    /**
-     * @param target
-     * @return
-     */
     public Object[] getActualIds(Object target) {
         if (idColumnNames.length == 0) {
             return null;
@@ -392,11 +302,7 @@ public class Introspected {
         }
     }
 
-    /**
-     * Get the table name defined for the introspected class.
-     *
-     * @return a table name
-     */
+
     public String getTableName() {
         return tableName;
     }
@@ -410,10 +316,6 @@ public class Introspected {
 
         return null;
     }
-
-    // *****************************************************************************
-    //                              Private Methods
-    // *****************************************************************************
 
     private void readColumnInfo(ArrayList<FieldColumnInfo> idFcInfos) {
         idFieldColumnInfos = new FieldColumnInfo[idFcInfos.size()];
@@ -478,9 +380,6 @@ public class Introspected {
         }
     }
 
-    /**
-     * Column information about a field
-     */
     private static class FieldColumnInfo {
         private boolean updatable;
         private boolean insertable;
