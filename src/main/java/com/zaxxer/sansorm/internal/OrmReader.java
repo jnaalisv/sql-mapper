@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 public class OrmReader extends OrmBase {
@@ -94,7 +95,7 @@ public class OrmReader extends OrmBase {
         return list;
     }
 
-    public static <T> T statementToObject(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
+    public static <T> Optional<T> statementToObject(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
         populateStatementParameters(stmt, args);
 
         ResultSet resultSet = null;
@@ -102,10 +103,10 @@ public class OrmReader extends OrmBase {
             resultSet = stmt.executeQuery();
             if (resultSet.next()) {
                 T target = (T) clazz.newInstance();
-                return resultSetToObject(resultSet, target);
+                return Optional.of(resultSetToObject(resultSet, target));
             }
 
-            return null;
+            return Optional.empty();
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -141,7 +142,7 @@ public class OrmReader extends OrmBase {
         return target;
     }
 
-    public static <T> T objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
+    public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
         Introspected introspected = Introspector.getIntrospected(clazz);
 
         StringBuilder where = new StringBuilder();
@@ -166,7 +167,7 @@ public class OrmReader extends OrmBase {
         }
     }
 
-    public static <T> T objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
+    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
         String sql = generateSelectFromClause(clazz, clause);
 
         PreparedStatement stmt = connection.prepareStatement(sql);
@@ -197,22 +198,20 @@ public class OrmReader extends OrmBase {
             sql.append(' ').append(clause);
         }
 
-        Number number = numberFromSql(connection, sql.toString(), args);
-        if (number == null) {
-            throw new RuntimeException("refactor to use Optional");
-        }
+        return numberFromSql(connection, sql.toString(), args)
+                .orElseThrow(() -> new RuntimeException("count query returned without results"))
+                .intValue();
 
-        return number.intValue();
     }
 
-    public static Number numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
+    public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             populateStatementParameters(stmt, args);
             try (ResultSet resultSet = stmt.executeQuery()) {
                 if (resultSet.next()) {
-                    return (Number) resultSet.getObject(1);
+                    return Optional.of( (Number) resultSet.getObject(1));
                 }
-                return null;
+                return Optional.empty();
             }
         }
     }

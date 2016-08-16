@@ -17,6 +17,7 @@
 package com.zaxxer.sansorm;
 
 import java.util.List;
+import java.util.Optional;
 
 public final class SqlClosureElf {
     private SqlClosureElf() {}
@@ -29,7 +30,7 @@ public final class SqlClosureElf {
      * @param <T>  The type of the object.
      * @return The object or <code>null</code>
      */
-    public static <T> T getObjectById(Class<T> type, Object... ids) {
+    public static <T> Optional<T> getObjectById(Class<T> type, Object... ids) {
         return SqlClosure.execute(c -> OrmElf.objectById(c, type, ids));
     }
 
@@ -42,7 +43,7 @@ public final class SqlClosureElf {
      * @param <T>    The type of the object.
      * @return The object or <code>null</code>
      */
-    public static <T> T objectFromClause(Class<T> type, String clause, Object... args) {
+    public static <T> Optional<T> objectFromClause(Class<T> type, String clause, Object... args) {
         return SqlClosure.execute(c -> OrmElf.objectFromClause(c, type, clause, args));
     }
 
@@ -134,7 +135,7 @@ public final class SqlClosureElf {
      * @param args optional values for a parameterized query
      * @return the resulting number or <code>null</code>
      */
-    public static Number numberFromSql(String sql, Object... args) {
+    public static Optional<Number> numberFromSql(String sql, Object... args) {
         return SqlClosure.execute(c -> OrmElf.numberFromSql(c, sql, args));
     }
 

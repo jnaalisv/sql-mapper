@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 public final class OrmElf {
 
@@ -39,7 +40,7 @@ public final class OrmElf {
      * @return the populated object
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> T objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
+    public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
         return OrmReader.objectById(connection, clazz, args);
     }
 
@@ -66,7 +67,7 @@ public final class OrmElf {
      * @return the populated object
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> T objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
+    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
         return OrmReader.objectFromClause(connection, clazz, clause, args);
     }
 
@@ -115,7 +116,7 @@ public final class OrmElf {
      * @return the resulting number or <code>null</code>
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static Number numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
+    public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
         return OrmReader.numberFromSql(connection, sql, args);
     }
 

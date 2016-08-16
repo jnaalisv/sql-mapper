@@ -42,13 +42,12 @@ public class SqlClosureElfTest {
         List<Product> products = SqlClosureElf.listFromClause(Product.class, "id > ?", 0l);
         Product firstProductOfAllProducts = products.get(0);
 
-        Product product = SqlClosureElf.getObjectById(Product.class, firstProductOfAllProducts.getId());
+        Product product = SqlClosureElf.getObjectById(Product.class, firstProductOfAllProducts.getId()).get();
 
-        assertThat(product).isNotNull();
         assertThat(product.getId()).isEqualTo(firstProductOfAllProducts.getId());
         assertThat(product.getProductCode()).isEqualTo("A1");
 
-        assertThat(SqlClosureElf.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isNull();
+        assertThat(SqlClosureElf.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
@@ -85,23 +84,22 @@ public class SqlClosureElfTest {
 
     @Test
     public void numberFromSql() throws SQLException {
-        Number number = SqlClosureElf.numberFromSql("select id from products where product_code = ?", "A1");
+        Number number = SqlClosureElf.numberFromSql("select id from products where product_code = ?", "A1").get();
         assertThat(number.longValue()).isGreaterThan(0l);
     }
 
     @Test
     public void objectFromClause() {
-        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
-        assertThat(product).isNotNull();
         assertThat(product.getProductCode()).isEqualTo("A1");
 
-        assertThat(SqlClosureElf.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isNull();
+        assertThat(SqlClosureElf.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
     public void deleteObject() {
-        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = SqlClosureElf.deleteObject(product);
 
@@ -114,7 +112,7 @@ public class SqlClosureElfTest {
 
     @Test
     public void deleteObjectById() {
-        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = SqlClosureElf.deleteObjectById(Product.class, product.getId());
 
@@ -139,13 +137,13 @@ public class SqlClosureElfTest {
 
     @Test
     public void updateObject() {
-        Product productA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product productA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1").get();
         productA1.setProductCode("AA11");
         productA1.setIntroduced(LocalDate.now());
 
         Product updatedProduct = SqlClosureElf.updateObject(productA1);
 
-        Product newlyFetchedProductA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "AA11");
+        Product newlyFetchedProductA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "AA11").get();
 
         long originalId = productA1.getId();
 
@@ -159,12 +157,12 @@ public class SqlClosureElfTest {
     @Test
     public void executeUpdate() {
 
-        Product productA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product productA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = SqlClosureElf.executeUpdate("update products set product_code = ? where id = ?", "AA11", productA1.getId());
         assertThat(rowCount).isEqualTo(1);
 
-        Product newlyFetchedProductA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "AA11");
+        Product newlyFetchedProductA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "AA11").get();
 
         long originalId = productA1.getId();
 
@@ -189,16 +187,13 @@ public class SqlClosureElfTest {
         assertThat(rowCounts[1]).isEqualTo(1);
         assertThat(rowCounts[2]).isEqualTo(1);
 
-        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "Q1");
-        assertThat(product).isNotNull();
+        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "Q1").get();
         assertThat(product.getProductCode()).isEqualTo("Q1");
 
-        product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "W2");
-        assertThat(product).isNotNull();
+        product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "W2").get();
         assertThat(product.getProductCode()).isEqualTo("W2");
 
-        product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "E3");
-        assertThat(product).isNotNull();
+        product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
     }
 
@@ -211,16 +206,13 @@ public class SqlClosureElfTest {
 
         assertThat(rowCount).isEqualTo(3);
 
-        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "Q1");
-        assertThat(product).isNotNull();
+        Product product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "Q1").get();
         assertThat(product.getProductCode()).isEqualTo("Q1");
 
-        product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "W2");
-        assertThat(product).isNotNull();
+        product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "W2").get();
         assertThat(product.getProductCode()).isEqualTo("W2");
 
-        product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "E3");
-        assertThat(product).isNotNull();
+        product = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
     }
 

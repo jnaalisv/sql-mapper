@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 public class SqlExecutorTest {
 
-    public static final long PRODUCT_DOESNT_EXIST = 23423432l;
+    private static final long PRODUCT_DOESNT_EXIST = 23423432l;
 
     @Autowired
     private TransactionAwareDataSourceProxy dataSource;
@@ -44,13 +44,12 @@ public class SqlExecutorTest {
         List<Product> products = sqlExecutor.listFromClause(Product.class, "id > ?", 0l);
         Product firstProductOfAllProducts = products.get(0);
 
-        Product product = sqlExecutor.getObjectById(Product.class, firstProductOfAllProducts.getId());
+        Product product = sqlExecutor.getObjectById(Product.class, firstProductOfAllProducts.getId()).get();
 
-        assertThat(product).isNotNull();
         assertThat(product.getId()).isEqualTo(firstProductOfAllProducts.getId());
         assertThat(product.getProductCode()).isEqualTo("A1");
 
-        assertThat(sqlExecutor.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isNull();
+        assertThat(sqlExecutor.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
@@ -87,23 +86,22 @@ public class SqlExecutorTest {
 
     @Test
     public void numberFromSql() throws SQLException {
-        Number number = sqlExecutor.numberFromSql("select id from products where product_code = ?", "A1");
+        Number number = sqlExecutor.numberFromSql("select id from products where product_code = ?", "A1").get();
         assertThat(number.longValue()).isGreaterThan(0l);
     }
 
     @Test
     public void objectFromClause() {
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
-        assertThat(product).isNotNull();
         assertThat(product.getProductCode()).isEqualTo("A1");
 
-        assertThat(sqlExecutor.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isNull();
+        assertThat(sqlExecutor.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
     public void deleteObject() {
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = sqlExecutor.deleteObject(product);
 
@@ -116,7 +114,7 @@ public class SqlExecutorTest {
 
     @Test
     public void deleteObjectById() {
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = sqlExecutor.deleteObjectById(Product.class, product.getId());
 
@@ -141,13 +139,13 @@ public class SqlExecutorTest {
 
     @Test
     public void updateObject() {
-        Product productA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product productA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
         productA1.setProductCode("AA11");
         productA1.setIntroduced(LocalDate.now());
 
         Product updatedProduct = sqlExecutor.updateObject(productA1);
 
-        Product newlyFetchedProductA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "AA11");
+        Product newlyFetchedProductA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "AA11").get();
 
         long originalId = productA1.getId();
 
@@ -161,12 +159,12 @@ public class SqlExecutorTest {
     @Test
     public void executeUpdate() {
 
-        Product productA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1");
+        Product productA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = sqlExecutor.executeUpdate("update products set product_code = ? where id = ?", "AA11", productA1.getId());
         assertThat(rowCount).isEqualTo(1);
 
-        Product newlyFetchedProductA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "AA11");
+        Product newlyFetchedProductA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "AA11").get();
 
         long originalId = productA1.getId();
 
@@ -191,16 +189,13 @@ public class SqlExecutorTest {
         assertThat(rowCounts[1]).isEqualTo(1);
         assertThat(rowCounts[2]).isEqualTo(1);
 
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "Q1");
-        assertThat(product).isNotNull();
+        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "Q1").get();
         assertThat(product.getProductCode()).isEqualTo("Q1");
 
-        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "W2");
-        assertThat(product).isNotNull();
+        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "W2").get();
         assertThat(product.getProductCode()).isEqualTo("W2");
 
-        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "E3");
-        assertThat(product).isNotNull();
+        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
     }
 
@@ -213,16 +208,13 @@ public class SqlExecutorTest {
 
         assertThat(rowCount).isEqualTo(3);
 
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "Q1");
-        assertThat(product).isNotNull();
+        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "Q1").get();
         assertThat(product.getProductCode()).isEqualTo("Q1");
 
-        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "W2");
-        assertThat(product).isNotNull();
+        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "W2").get();
         assertThat(product.getProductCode()).isEqualTo("W2");
 
-        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "E3");
-        assertThat(product).isNotNull();
+        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
     }
 

@@ -8,6 +8,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 public class SqlExecutor {
 
@@ -17,11 +18,11 @@ public class SqlExecutor {
         this.dataSource = dataSource;
     }
 
-    public <T> T getObjectById(Class<T> type, Object... ids) {
+    public <T> Optional<T> getObjectById(Class<T> type, Object... ids) {
         return execute(connection -> OrmReader.objectById(connection, type, ids));
     }
     
-    public <T> T objectFromClause(Class<T> type, String clause, Object... args) {
+    public <T> Optional<T> objectFromClause(Class<T> type, String clause, Object... args) {
         return execute(connection -> OrmReader.objectFromClause(connection, type, clause, args));
     }
 
@@ -49,7 +50,7 @@ public class SqlExecutor {
         return execute(connection -> OrmReader.countObjectsFromClause(connection, clazz, clause, args));
     }
 
-    public Number numberFromSql(String sql, Object... args) {
+    public Optional<Number> numberFromSql(String sql, Object... args) {
         return execute(connection -> OrmReader.numberFromSql(connection, sql, args));
     }
 
