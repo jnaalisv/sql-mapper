@@ -180,19 +180,9 @@ public class OrmWriter extends OrmBase {
     }
 
     public static int executeUpdate(Connection connection, String sql, Object... args) throws SQLException {
-        PreparedStatement stmt = null;
-        try {
-            stmt = connection.prepareStatement(sql);
-
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             populateStatementParameters(stmt, args);
-
-            int rc = stmt.executeUpdate();
-
-            return rc;
-        } finally {
-            if (stmt != null) {
-                stmt.close();
-            }
+            return stmt.executeUpdate();
         }
     }
 

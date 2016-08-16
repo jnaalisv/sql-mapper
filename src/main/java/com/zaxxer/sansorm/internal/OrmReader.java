@@ -161,11 +161,9 @@ public class OrmReader extends OrmBase {
     public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
         String sql = generateSelectFromClause(clazz, clause);
 
-        PreparedStatement stmt = connection.prepareStatement(sql);
-        List<T> list = statementToList(stmt, clazz, args);
-        stmt.close();
-
-        return list;
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            return statementToList(stmt, clazz, args);
+        }
     }
 
     public static <T> T objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
@@ -199,27 +197,22 @@ public class OrmReader extends OrmBase {
             sql.append(' ').append(clause);
         }
 
-        return numberFromSql(connection, sql.toString(), args).intValue();
+        Number number = numberFromSql(connection, sql.toString(), args);
+        if (number == null) {
+            throw new RuntimeException("refactor to use Optional");
+        }
+
+        return number.intValue();
     }
 
     public static Number numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
-        PreparedStatement stmt = connection.prepareStatement(sql);
-        try {
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             populateStatementParameters(stmt, args);
-
-            ResultSet resultSet = stmt.executeQuery();
-            try {
+            try (ResultSet resultSet = stmt.executeQuery()) {
                 if (resultSet.next()) {
                     return (Number) resultSet.getObject(1);
                 }
-
                 return null;
-            } finally {
-                resultSet.close();
-            }
-        } finally {
-            if (stmt != null) {
-                stmt.close();
             }
         }
     }
