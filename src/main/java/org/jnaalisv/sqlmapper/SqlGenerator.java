@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class SqlGenerator {
-    private static final int CACHE_SIZE = Integer.getInteger("com.zaxxer.sansorm.statementCacheSize", 500);
+    private static final int CACHE_SIZE = Integer.getInteger("org.jnaalisv.sqlmapper.statementCacheSize", 500);
 
     private static Map<String, String> csvCache = new ConcurrentHashMap<>();
 
@@ -30,6 +30,16 @@ public final class SqlGenerator {
             return this.size() > CACHE_SIZE;
         }
     });
+
+    private static Map<String, String> createStatementCache = Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_SIZE) {
+        private static final long serialVersionUID = 4559270460685275064L;
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+            return this.size() > CACHE_SIZE;
+        }
+    });
+
 
     private SqlGenerator() {}
 
@@ -184,5 +194,40 @@ public final class SqlGenerator {
         }
 
         return sql;
+    }
+
+    public static String createStatementForInsertSql(TableSpecs tableSpecs) {
+        String sql = createStatementCache.get(tableSpecs.getTableName());
+        if (sql == null) {
+            String tableName = tableSpecs.getTableName();
+            StringBuilder sqlSB = new StringBuilder("INSERT INTO ")
+                    .append(tableName)
+                    .append('(');
+            StringBuilder sqlValues = new StringBuilder(") VALUES (");
+            for (String column : tableSpecs.getInsertableColumns()) {
+                sqlSB.append(column).append(',');
+                sqlValues.append("?,");
+            }
+            sqlValues.deleteCharAt(sqlValues.length() - 1);
+            sqlSB.deleteCharAt(sqlSB.length() - 1).append(sqlValues).append(')');
+
+            sql = sqlSB.toString();
+            createStatementCache.put(tableSpecs.getTableName(), sql);
+        }
+
+        return sql;
+    }
+
+    public static String deleteObjectByIdSql(TableSpecs tableSpecs) {
+        StringBuilder sql = new StringBuilder()
+                .append("DELETE FROM ")
+                .append(tableSpecs.getTableName())
+                .append(" WHERE ");
+
+        for (String idColumn : tableSpecs.getIdColumnNames()) {
+            sql.append(idColumn).append("=? AND ");
+        }
+        sql.setLength(sql.length() - 5);
+        return sql.toString();
     }
 }

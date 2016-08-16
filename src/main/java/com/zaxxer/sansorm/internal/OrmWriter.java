@@ -25,26 +25,9 @@ import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class OrmWriter extends OrmBase {
-    private static final int CACHE_SIZE = Integer.getInteger("com.zaxxer.sansorm.statementCacheSize", 500);
-
-    private static Map<Introspected, String> createStatementCache;
-
-    static {
-        createStatementCache = Collections.synchronizedMap(new LinkedHashMap<Introspected, String>(CACHE_SIZE) {
-            private static final long serialVersionUID = 4559270460685275064L;
-
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<Introspected, String> eldest) {
-                return this.size() > CACHE_SIZE;
-            }
-        });
-    }
 
     public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException {
         Iterator<T> iterableIterator = iterable.iterator();
@@ -57,7 +40,7 @@ public class OrmWriter extends OrmBase {
 
         String[] columnNames = introspected.getInsertableColumns();
 
-        PreparedStatement stmt = createStatementForInsert(connection, introspected, columnNames);
+        PreparedStatement stmt = createStatementForInsert(connection, introspected);
         int[] parameterTypes = getParameterTypes(stmt);
 
         for (T item : iterable) {
@@ -101,7 +84,7 @@ public class OrmWriter extends OrmBase {
         String[] idColumnNames = introspected.getIdColumnNames();
         String[] columnNames = introspected.getInsertableColumns();
 
-        PreparedStatement stmt = createStatementForInsert(connection, introspected, columnNames);
+        PreparedStatement stmt = createStatementForInsert(connection, introspected);
         int[] parameterTypes = getParameterTypes(stmt);
 
         int rowCount = 0;
@@ -133,7 +116,7 @@ public class OrmWriter extends OrmBase {
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
 
-        PreparedStatement stmt = createStatementForInsert(connection, introspected, columnNames);
+        PreparedStatement stmt = createStatementForInsert(connection, introspected);
         setParamsExecuteClose(target, introspected, columnNames, stmt);
 
         return target;
@@ -158,17 +141,10 @@ public class OrmWriter extends OrmBase {
     }
 
     public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
-        Introspected introspected = Introspector.getIntrospected(clazz);
 
-        StringBuilder sql = new StringBuilder();
-        sql.append("DELETE FROM ").append(introspected.getTableName()).append(" WHERE ");
+        String sql = SqlGenerator.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
 
-        for (String idColumn : introspected.getIdColumnNames()) {
-            sql.append(idColumn).append("=? AND ");
-        }
-        sql.setLength(sql.length() - 5);
-
-        return executeUpdate(connection, sql.toString(), args);
+        return executeUpdate(connection, sql, args);
     }
 
     public static int executeUpdate(Connection connection, String sql, Object... args) throws SQLException {
@@ -178,25 +154,10 @@ public class OrmWriter extends OrmBase {
         }
     }
 
-    private static <T> PreparedStatement createStatementForInsert(Connection connection, Introspected introspected, String[] columns) throws SQLException {
-        String sql = createStatementCache.get(introspected);
-        if (sql == null) {
-            String tableName = introspected.getTableName();
-            StringBuilder sqlSB = new StringBuilder("INSERT INTO ").append(tableName).append('(');
-            StringBuilder sqlValues = new StringBuilder(") VALUES (");
-            for (String column : columns) {
-                sqlSB.append(column).append(',');
-                sqlValues.append("?,");
-            }
-            sqlValues.deleteCharAt(sqlValues.length() - 1);
-            sqlSB.deleteCharAt(sqlSB.length() - 1).append(sqlValues).append(')');
-
-            sql = sqlSB.toString();
-            createStatementCache.put(introspected, sql);
-        }
-
-        if (introspected.hasGeneratedId()) {
-            return connection.prepareStatement(sql, introspected.getIdColumnNames());
+    private static <T> PreparedStatement createStatementForInsert(Connection connection, TableSpecs tableSpecs) throws SQLException {
+        String sql = SqlGenerator.createStatementForInsertSql(tableSpecs);
+        if (tableSpecs.hasGeneratedId()) {
+            return connection.prepareStatement(sql, tableSpecs.getIdColumnNames());
         } else {
             return connection.prepareStatement(sql);
         }

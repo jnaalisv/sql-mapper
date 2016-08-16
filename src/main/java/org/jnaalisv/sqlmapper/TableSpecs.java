@@ -12,5 +12,7 @@ public interface TableSpecs {
     }
 
     String[] getUpdatableColumns();
+    String[] getInsertableColumns();
+    boolean hasGeneratedId();
 
 }
