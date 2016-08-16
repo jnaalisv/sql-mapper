@@ -6,7 +6,7 @@ public interface TableSpecs {
     String[] getColumnNames();
     String[] getColumnTableNames();
     String[] getIdColumnNames();
-    
+
     default String getFirstColumnNames() {
         return this.getColumnNames()[0];
     }
