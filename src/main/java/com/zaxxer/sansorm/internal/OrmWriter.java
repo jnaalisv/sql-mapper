@@ -54,25 +54,6 @@ public class OrmWriter extends OrmBase {
         return updateCounts;
     }
 
-    public static <T> void setStatementParameters(PreparedStatement stmt, String[] columnNames, int[] parameterTypes, Introspected introspected, T item) throws SQLException {
-        int parameterIndex = 1;
-        for (String column : columnNames) {
-            int parameterType = parameterTypes[parameterIndex - 1];
-            Object fieldValue = introspected.get(item, column);
-            setStatementParameter(stmt, parameterIndex, fieldValue, parameterType);
-            ++parameterIndex;
-        }
-    }
-
-    public static void setStatementParameter(PreparedStatement stmt, int parameterIndex, Object entityFieldValue, int parameterType) throws SQLException {
-        Object databaseValue = TypeMapper.mapSqlType(entityFieldValue, parameterType);
-        if (databaseValue == null) {
-            stmt.setNull(parameterIndex, parameterType);
-        } else {
-            stmt.setObject(parameterIndex, databaseValue, parameterType);
-        }
-    }
-
     public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws SQLException {
         Iterator<T> iterableIterator = iterable.iterator();
         if (!iterableIterator.hasNext()) {
@@ -172,18 +153,7 @@ public class OrmWriter extends OrmBase {
     private static <T> void setParamsExecuteClose(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException {
         int[] parameterTypes = getParameterTypes(stmt);
 
-        int parameterIndex = 1;
-        for (String column : columnNames) {
-            int parameterType = parameterTypes[parameterIndex - 1];
-            Object object = TypeMapper.mapSqlType(introspected.get(target, column), parameterType);
-            if (object != null) {
-                stmt.setObject(parameterIndex, object, parameterType);
-            } else {
-                stmt.setNull(parameterIndex, parameterType);
-            }
-            ++parameterIndex;
-        }
-
+        int parameterIndex = setStatementParameters(stmt, columnNames, parameterTypes, introspected, target);
         // If there is still a parameter left to be set, it's the ID used for an update
         if (parameterIndex <= parameterTypes.length) {
             for (Object id : introspected.getActualIds(target)) {
@@ -215,5 +185,26 @@ public class OrmWriter extends OrmBase {
         }
 
         return parameterTypes;
+    }
+
+    public static <T> int setStatementParameters(PreparedStatement stmt, String[] columnNames, int[] parameterTypes, Introspected introspected, T item) throws SQLException {
+        int parameterIndex = 1;
+        for (String column : columnNames) {
+            int parameterType = parameterTypes[parameterIndex - 1];
+            Object fieldValue = introspected.get(item, column);
+            setStatementParameter(stmt, parameterIndex, fieldValue, parameterType);
+            ++parameterIndex;
+        }
+
+        return parameterIndex;
+    }
+
+    public static void setStatementParameter(PreparedStatement stmt, int parameterIndex, Object entityFieldValue, int parameterType) throws SQLException {
+        Object databaseValue = TypeMapper.mapSqlType(entityFieldValue, parameterType);
+        if (databaseValue == null) {
+            stmt.setNull(parameterIndex, parameterType);
+        } else {
+            stmt.setObject(parameterIndex, databaseValue, parameterType);
+        }
     }
 }
