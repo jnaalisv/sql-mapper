@@ -16,6 +16,8 @@
 
 package com.zaxxer.sansorm.internal;
 
+import org.jnaalisv.sqlmapper.SqlGenerator;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,24 +25,11 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
 public class OrmReader extends OrmBase {
-    private static final int CACHE_SIZE = Integer.getInteger("com.zaxxer.sansorm.statementCacheSize", 500);
-
-    private static final Map<String, String> fromClauseStmtCache = Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_SIZE) {
-        private static final long serialVersionUID = 6259942586093454872L;
-
-        @Override
-        protected boolean removeEldestEntry(Entry<String, String> eldest) {
-            return this.size() > CACHE_SIZE;
-        }
-    });
 
     public static <T> List<T> statementToList(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
         try {
@@ -145,22 +134,13 @@ public class OrmReader extends OrmBase {
     public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
         Introspected introspected = Introspector.getIntrospected(clazz);
 
-        StringBuilder where = new StringBuilder();
-        for (String column : introspected.getIdColumnNames()) {
-            where.append(column).append("=? AND ");
-        }
-
-        // the where clause can be length of zero if we are loading an object that is presumed to
-        // be the only row in the table and therefore has no id.
-        if (where.length() > 0) {
-            where.setLength(where.length() - 5);
-        }
+        String where = SqlGenerator.constructWhereSql(introspected.getIdColumnNames());
 
         return objectFromClause(connection, clazz, where.toString(), args);
     }
 
     public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
-        String sql = generateSelectFromClause(clazz, clause);
+        String sql = SqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             return statementToList(stmt, clazz, args);
@@ -168,7 +148,7 @@ public class OrmReader extends OrmBase {
     }
 
     public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
-        String sql = generateSelectFromClause(clazz, clause);
+        String sql = SqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
 
         PreparedStatement stmt = connection.prepareStatement(sql);
 
@@ -176,32 +156,11 @@ public class OrmReader extends OrmBase {
     }
 
     public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
-        Introspected introspected = Introspector.getIntrospected(clazz);
+        String sql = SqlGenerator.countObjectsFromClause(Introspector.getIntrospected(clazz), clause);
 
-        String tableName = introspected.getTableName();
-
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COUNT(");
-        String countColumn = tableName + ".";
-        String[] idColumnNames = introspected.getIdColumnNames();
-        if (idColumnNames.length > 0) {
-            countColumn += idColumnNames[0];
-        } else {
-            countColumn += introspected.getColumnNames()[0];
-        }
-        sql.append(countColumn).append(") FROM ").append(tableName).append(' ').append(tableName);
-        if (clause != null && !clause.isEmpty()) {
-            String upper = clause.toUpperCase();
-            if (!upper.contains("WHERE") && !upper.contains("JOIN") && !upper.startsWith("ORDER")) {
-                sql.append(" WHERE ");
-            }
-            sql.append(' ').append(clause);
-        }
-
-        return numberFromSql(connection, sql.toString(), args)
+        return numberFromSql(connection, sql, args)
                 .orElseThrow(() -> new RuntimeException("count query returned without results"))
                 .intValue();
-
     }
 
     public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
@@ -214,30 +173,5 @@ public class OrmReader extends OrmBase {
                 return Optional.empty();
             }
         }
-    }
-
-    private static <T> String generateSelectFromClause(Class<T> clazz, String clause) {
-        String cacheKey = clazz.getName() + clause;
-
-        String sql = fromClauseStmtCache.get(cacheKey);
-        if (sql == null) {
-            Introspected introspected = Introspector.getIntrospected(clazz);
-
-            String tableName = introspected.getTableName();
-
-            StringBuilder sqlSB = new StringBuilder();
-            sqlSB.append("SELECT ").append(getColumnsCsv(clazz, tableName)).append(" FROM ").append(tableName).append(' ').append(tableName);
-            if (clause != null && !clause.isEmpty()) {
-                if (!clause.toUpperCase().contains("WHERE") && !clause.toUpperCase().contains("JOIN")) {
-                    sqlSB.append(" WHERE ");
-                }
-                sqlSB.append(' ').append(clause);
-            }
-
-            sql = sqlSB.toString();
-            fromClauseStmtCache.put(cacheKey, sql);
-        }
-
-        return sql;
     }
 }

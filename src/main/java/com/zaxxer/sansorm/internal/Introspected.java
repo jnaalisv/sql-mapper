@@ -16,6 +16,7 @@
 
 package com.zaxxer.sansorm.internal;
 
+import org.jnaalisv.sqlmapper.TableSpecs;
 import org.jnaalisv.sqlmapper.TypeMapper;
 import org.postgresql.util.PGobject;
 
@@ -46,7 +47,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class Introspected {
+public class Introspected implements TableSpecs {
     private String tableName;
 
     private Map<String, FieldColumnInfo> columnToField = new LinkedHashMap<>();

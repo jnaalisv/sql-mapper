@@ -21,14 +21,8 @@ import org.jnaalisv.sqlmapper.TypeMapper;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 class OrmBase {
-    private static Map<String, String> csvCache = new ConcurrentHashMap<>();
 
     protected OrmBase() {}
 
@@ -44,60 +38,6 @@ class OrmBase {
             Object object = TypeMapper.mapSqlType(args[column - 1], parameterType);
             stmt.setObject(column, object, parameterType);
         }
-    }
-
-    public static <T> String getColumnsCsv(Class<T> clazz, String... tablePrefix) {
-        String cacheKey = (tablePrefix == null || tablePrefix.length == 0 ? clazz.getName() : tablePrefix[0] + clazz.getName());
-
-        String columnCsv = csvCache.get(cacheKey);
-        if (columnCsv == null) {
-            Introspected introspected = Introspector.getIntrospected(clazz);
-            StringBuilder sb = new StringBuilder();
-            String[] columnNames = introspected.getColumnNames();
-            String[] columnTableNames = introspected.getColumnTableNames();
-            for (int i = 0; i < columnNames.length; i++) {
-                String column = columnNames[i];
-                String columnTableName = columnTableNames[i];
-
-                if (columnTableName != null) {
-                    sb.append(columnTableName).append('.');
-                } else if (tablePrefix.length > 0) {
-                    sb.append(tablePrefix[0]).append('.');
-                }
-
-                sb.append(column).append(',');
-            }
-
-            columnCsv = sb.deleteCharAt(sb.length() - 1).toString();
-            csvCache.put(cacheKey, columnCsv);
-        }
-
-        return columnCsv;
-    }
-
-    public static <T> String getColumnsCsvExclude(Class<T> clazz, String... excludeColumns) {
-        Set<String> excludes = new HashSet<String>(Arrays.asList(excludeColumns));
-
-        Introspected introspected = Introspector.getIntrospected(clazz);
-        StringBuilder sb = new StringBuilder();
-        String[] columnNames = introspected.getColumnNames();
-        String[] columnTableNames = introspected.getColumnTableNames();
-        for (int i = 0; i < columnNames.length; i++) {
-            String column = columnNames[i];
-            if (excludes.contains(column)) {
-                continue;
-            }
-
-            String columnTableName = columnTableNames[i];
-
-            if (columnTableName != null) {
-                sb.append(columnTableName).append('.');
-            }
-
-            sb.append(column).append(',');
-        }
-
-        return sb.deleteCharAt(sb.length() - 1).toString();
     }
 
 }
