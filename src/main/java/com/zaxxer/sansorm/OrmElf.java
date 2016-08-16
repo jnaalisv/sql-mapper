@@ -16,16 +16,13 @@
 
 package com.zaxxer.sansorm;
 
-import com.zaxxer.sansorm.internal.Introspector;
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Set;
 
 public final class OrmElf {
 
@@ -123,68 +120,6 @@ public final class OrmElf {
     }
 
     /**
-     * This method takes a PreparedStatement, a target class, and optional arguments to set
-     * as query parameters.  It sets the parameters automatically, executes the query, and
-     * constructs and populates an instance of the target class.  <b>The PreparedStatement will closed.</b>
-     *
-     * @param stmt  the PreparedStatement to execute to construct an object
-     * @param clazz the class of the object to instantiate and populate with state
-     * @param args  optional arguments to set as query parameters in the PreparedStatement
-     * @param <T>   the class template
-     * @return the populated object
-     * @throws SQLException if a {@link SQLException} occurs
-     */
-    public static <T> T statementToObject(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
-        return OrmReader.statementToObject(stmt, clazz, args);
-    }
-
-    /**
-     * Execute a prepared statement (query) with the supplied args set as query parameters (if specified), and
-     * return a list of objects as a result.  <b>The PreparedStatement will closed.</b>
-     *
-     * @param stmt  the PreparedStatement to execute
-     * @param clazz the class of the objects to instantiate and populate with state
-     * @param args  optional arguments to set as query parameters in the PreparedStatement
-     * @param <T>   the class template
-     * @return a list of instance of the target class, or an empty list
-     * @throws SQLException if a {@link SQLException} occurs
-     */
-    public static <T> List<T> statementToList(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
-        return OrmReader.statementToList(stmt, clazz, args);
-    }
-
-    /**
-     * Get an object from the specified ResultSet.  ResultSet.next() is <i>NOT</i> called,
-     * this should be done by the caller.  <b>The ResultSet is not closed as a result of this
-     * method.</b>
-     *
-     * @param resultSet a {@link ResultSet}
-     * @param target    the target object to set values on
-     * @param <T>       the class template
-     * @return the populated object
-     * @throws SQLException if a {@link SQLException} occurs
-     */
-    public static <T> T resultSetToObject(ResultSet resultSet, T target) throws SQLException {
-        return OrmReader.resultSetToObject(resultSet, target);
-    }
-
-    /**
-     * Get an object from the specified ResultSet.  ResultSet.next() is <i>NOT</i> called,
-     * this should be done by the caller.  <b>The ResultSet is not closed as a result of this
-     * method.</b>
-     *
-     * @param resultSet      a {@link ResultSet}
-     * @param target         the target object to set values on
-     * @param ignoredColumns the columns in the result set to ignore.
-     * @param <T>            the class template
-     * @return the populated object
-     * @throws SQLException if a {@link SQLException} occurs
-     */
-    public static <T> T resultSetToObject(ResultSet resultSet, T target, Set<String> ignoredColumns) throws SQLException {
-        return OrmReader.resultSetToObject(resultSet, target, ignoredColumns);
-    }
-
-    /**
      * This method will iterate over a ResultSet that contains columns that map to the
      * target class and return a list of target instances.  <b>Note, this assumes that
      * ResultSet.next() has <i>NOT</i> been called before calling this method.</b>
@@ -200,10 +135,6 @@ public final class OrmElf {
     public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException {
         return OrmReader.resultSetToList(resultSet, targetClass);
     }
-
-    // ------------------------------------------------------------------------
-    //                               Write Methods
-    // ------------------------------------------------------------------------
 
     /**
      * Insert a collection of objects in a non-batched manner (i.e. using iteration and individual INSERTs).
@@ -289,45 +220,6 @@ public final class OrmElf {
 
     public static int executeUpdate(Connection connection, String sql, Object... args) throws SQLException {
         return OrmWriter.executeUpdate(connection, sql, args);
-    }
-
-    /**
-     * Gets the column name defined for the given property for the given type.
-     *
-     * @param clazz        The type.
-     * @param propertyName The object property name.
-     * @return The database column name.
-     */
-    public static String getColumnFromProperty(Class<?> clazz, String propertyName) {
-        return Introspector.getIntrospected(clazz).getColumnNameForProperty(propertyName);
-    }
-
-    /**
-     * Get a comma separated values list of column names for the given class, suitable
-     * for inclusion into a SQL SELECT statement.
-     *
-     * @param clazz       the annotated class
-     * @param tablePrefix an optional table prefix to append to each column
-     * @param <T>         the class template
-     * @return a CSV of annotated column names
-     */
-    public static <T> String getColumnsCsv(Class<T> clazz, String... tablePrefix) {
-        return OrmReader.getColumnsCsv(clazz, tablePrefix);
-    }
-
-    /**
-     * Get a comma separated values list of column names for the given class -- <i>excluding
-     * the column names specified</i>, suitable for inclusion into a SQL SELECT statement.
-     * Note the excluded column names must exactly match annotated column names in the class
-     * in a case-sensitive manner.
-     *
-     * @param clazz          the annotated class
-     * @param excludeColumns optional columns to exclude from the returned list of columns
-     * @param <T>            the class template
-     * @return a CSV of annotated column names
-     */
-    public static <T> String getColumnsCsvExclude(Class<T> clazz, String... excludeColumns) {
-        return OrmReader.getColumnsCsvExclude(clazz, excludeColumns);
     }
 
     /**
