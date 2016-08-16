@@ -17,6 +17,10 @@ import java.time.LocalTime;
 public class TypeMapper {
 
     public static final Object mapSqlType(Object object, int sqlType) {
+        if (object == null) {
+            return object;
+        }
+
         switch (sqlType) {
             case Types.TIMESTAMP:
                 if (object instanceof LocalDateTime) {
