@@ -23,7 +23,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,9 +62,6 @@ public class OrmReader extends OrmBase {
         }
 
         Introspected introspected = Introspector.getIntrospected(targetClass);
-        final boolean hasJoinColumns = introspected.hasSelfJoinColumn();
-        Map<T, Object> deferredSelfJoinFkMap = (hasJoinColumns ? new HashMap<T, Object>() : null);
-        Map<Object, T> idToTargetMap = (hasJoinColumns ? new HashMap<Object, T>() : null);
 
         ResultSetMetaData metaData = resultSet.getMetaData();
         final int columnCount = metaData.getColumnCount();
@@ -85,32 +81,12 @@ public class OrmReader extends OrmBase {
                     }
 
                     String columnName = columnNames[column - 1];
-
-                    if (hasJoinColumns && introspected.isSelfJoinColumn(columnName)) {
-                        deferredSelfJoinFkMap.put(target, columnValue);
-                    } else {
-                        introspected.set(target, columnName, columnValue);
-                    }
+                    introspected.set(target, columnName, columnValue);
                 }
-
-                if (hasJoinColumns) {
-                    idToTargetMap.put(introspected.getActualIds(target)[0], target);
-                }
-            }
-            while (resultSet.next());
+            } while (resultSet.next());
 
             resultSet.close();
 
-            if (hasJoinColumns) {
-                // set the self join object instances based on the foreign key ids...
-                String idColumn = introspected.getSelfJoinColumn();
-                for (Entry<T, Object> entry : deferredSelfJoinFkMap.entrySet()) {
-                    T value = idToTargetMap.get(entry.getValue());
-                    if (value != null) {
-                        introspected.set(entry.getKey(), idColumn, value);
-                    }
-                }
-            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

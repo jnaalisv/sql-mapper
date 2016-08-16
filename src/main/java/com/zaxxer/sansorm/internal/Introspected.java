@@ -26,7 +26,6 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.lang.reflect.Field;
@@ -48,15 +47,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class Introspected {
-    private Class<?> clazz;
     private String tableName;
 
     private Map<String, FieldColumnInfo> columnToField = new LinkedHashMap<>();
 
-    private FieldColumnInfo selfJoinFCInfo;
-
     private boolean isGeneratedId;
-    
+
     private FieldColumnInfo[] idFieldColumnInfos;
     private String[] idColumnNames;
     private String[] columnNames;
@@ -67,7 +63,6 @@ public class Introspected {
     private String[] updatableColumns;
 
     Introspected(Class<?> clazz) {
-        this.clazz = clazz;
 
         Table tableAnnotation = clazz.getAnnotation(Table.class);
         if (tableAnnotation != null) {
@@ -195,18 +190,6 @@ public class Introspected {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public boolean hasSelfJoinColumn() {
-        return selfJoinFCInfo != null;
-    }
-
-    public boolean isSelfJoinColumn(String columnName) {
-        return selfJoinFCInfo.columnName.equals(columnName);
-    }
-
-    public String getSelfJoinColumn() {
-        return (selfJoinFCInfo != null ? selfJoinFCInfo.columnName : null);
     }
 
     public String[] getColumnNames() {
@@ -358,20 +341,7 @@ public class Introspected {
             fcInfo.insertable = columnAnnotation.insertable();
             fcInfo.updatable = columnAnnotation.updatable();
         } else {
-            // If there is no Column annotation, is there a JoinColumn annotation?
-            JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
-            if (joinColumnAnnotation != null) {
-                // Is the JoinColumn a self-join?
-                if (field.getType() == clazz) {
-                    fcInfo.columnName = joinColumnAnnotation.name().toLowerCase();
-                    selfJoinFCInfo = fcInfo;
-                } else {
-                    throw new RuntimeException("JoinColumn annotations can only be self-referencing: " + field.getType().getCanonicalName() + " != "
-                            + clazz.getCanonicalName());
-                }
-            } else {
-                fcInfo.columnName = field.getName().toLowerCase();
-            }
+            fcInfo.columnName = field.getName().toLowerCase();
         }
 
         Transient transientAnnotation = field.getAnnotation(Transient.class);

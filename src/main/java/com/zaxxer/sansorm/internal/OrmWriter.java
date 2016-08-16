@@ -62,10 +62,6 @@ public class OrmWriter extends OrmBase {
 
         Class<?> clazz = iterableIterator.next().getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
-        final boolean hasSelfJoinColumn = introspected.hasSelfJoinColumn();
-        if (hasSelfJoinColumn) {
-            throw new RuntimeException("insertListBatched() is not supported for objects with self-referencing columns due to Derby limitations");
-        }
 
         String[] columnNames = introspected.getInsertableColumns();
 
@@ -77,7 +73,7 @@ public class OrmWriter extends OrmBase {
             for (String column : columnNames) {
                 int parameterType = parameterTypes[parameterIndex - 1];
                 Object object = TypeMapper.mapSqlType(introspected.get(item, column), parameterType);
-                if (object != null && !(hasSelfJoinColumn && introspected.isSelfJoinColumn(column))) {
+                if (object != null) {
                     stmt.setObject(parameterIndex, object, parameterType);
                 } else {
                     stmt.setNull(parameterIndex, parameterType);
@@ -101,7 +97,6 @@ public class OrmWriter extends OrmBase {
 
         Class<?> clazz = iterableIterator.next().getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
-        final boolean hasSelfJoinColumn = introspected.hasSelfJoinColumn();
         String[] idColumnNames = introspected.getIdColumnNames();
         String[] columnNames = introspected.getInsertableColumns();
 
@@ -116,7 +111,7 @@ public class OrmWriter extends OrmBase {
             for (String column : columnNames) {
                 int parameterType = parameterTypes[parameterIndex - 1];
                 Object object = TypeMapper.mapSqlType(introspected.get(item, column), parameterType);
-                if (object != null && !(hasSelfJoinColumn && introspected.isSelfJoinColumn(column))) {
+                if (object != null) {
                     stmt.setObject(parameterIndex, object, parameterType);
                 } else {
                     stmt.setNull(parameterIndex, parameterType);
@@ -139,25 +134,6 @@ public class OrmWriter extends OrmBase {
             stmt.clearParameters();
         }
         stmt.close();
-
-        // If there is a self-referencing column, update it with the generated IDs
-        if (hasSelfJoinColumn) {
-            final String selfJoinColumn = introspected.getSelfJoinColumn();
-            final String idColumn = idColumnNames[0];
-            StringBuffer sql = new StringBuffer("UPDATE ").append(introspected.getTableName()).append(" SET ");
-            sql.append(selfJoinColumn).append("=? WHERE ").append(idColumn).append("=?");
-            stmt = connection.prepareStatement(sql.toString());
-            for (T item : iterable) {
-                Object referencedItem = introspected.get(item, selfJoinColumn);
-                if (referencedItem != null) {
-                    stmt.setObject(1, introspected.getActualIds(referencedItem)[0]);
-                    stmt.setObject(2, introspected.getActualIds(item)[0]);
-                    stmt.addBatch();
-                    stmt.clearParameters();
-                }
-            }
-            stmt.executeBatch();
-        }
 
         return rowCount;
     }
