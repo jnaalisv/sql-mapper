@@ -27,21 +27,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * OrmBase
- */
 class OrmBase {
-    private static Map<String, String> csvCache;
+    private static Map<String, String> csvCache = new ConcurrentHashMap<>();
 
-    static {
-        csvCache = new ConcurrentHashMap<String, String>();
-    }
+    protected OrmBase() {}
 
-    protected OrmBase() {
-        // protected constructor
-    }
-
-    protected static final void populateStatementParameters(PreparedStatement stmt, Object... args) throws SQLException {
+    protected static void populateStatementParameters(PreparedStatement stmt, Object... args) throws SQLException {
         ParameterMetaData parameterMetaData = stmt.getParameterMetaData();
         final int paramCount = parameterMetaData.getParameterCount();
         if (paramCount > 0 && args.length < paramCount) {
@@ -55,7 +46,7 @@ class OrmBase {
         }
     }
 
-    public static final <T> String getColumnsCsv(Class<T> clazz, String... tablePrefix) {
+    public static <T> String getColumnsCsv(Class<T> clazz, String... tablePrefix) {
         String cacheKey = (tablePrefix == null || tablePrefix.length == 0 ? clazz.getName() : tablePrefix[0] + clazz.getName());
 
         String columnCsv = csvCache.get(cacheKey);
@@ -84,7 +75,7 @@ class OrmBase {
         return columnCsv;
     }
 
-    public static final <T> String getColumnsCsvExclude(Class<T> clazz, String... excludeColumns) {
+    public static <T> String getColumnsCsvExclude(Class<T> clazz, String... excludeColumns) {
         Set<String> excludes = new HashSet<String>(Arrays.asList(excludeColumns));
 
         Introspected introspected = Introspector.getIntrospected(clazz);

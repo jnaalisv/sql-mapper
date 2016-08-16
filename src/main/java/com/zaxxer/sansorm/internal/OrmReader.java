@@ -30,25 +30,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-/**
- * OrmReader
- */
-// MULTIPLESTRINGS:OFF
 public class OrmReader extends OrmBase {
     private static final int CACHE_SIZE = Integer.getInteger("com.zaxxer.sansorm.statementCacheSize", 500);
 
-    private static final Map<String, String> fromClauseStmtCache;
+    private static final Map<String, String> fromClauseStmtCache = Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_SIZE) {
+        private static final long serialVersionUID = 6259942586093454872L;
 
-    static {
-        fromClauseStmtCache = Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_SIZE) {
-            private static final long serialVersionUID = 6259942586093454872L;
-
-            @Override
-            protected boolean removeEldestEntry(Entry<String, String> eldest) {
-                return this.size() > CACHE_SIZE;
-            }
-        });
-    }
+        @Override
+        protected boolean removeEldestEntry(Entry<String, String> eldest) {
+            return this.size() > CACHE_SIZE;
+        }
+    });
 
     public static <T> List<T> statementToList(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
         try {
@@ -63,7 +55,6 @@ public class OrmReader extends OrmBase {
         return stmt.executeQuery();
     }
 
-    // COMPLEXITY:OFF
     public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException {
         List<T> list = new ArrayList<T>();
         if (!resultSet.next()) {
@@ -126,7 +117,6 @@ public class OrmReader extends OrmBase {
 
         return list;
     }
-    // COMPLEXITY:ON
 
     public static <T> T statementToObject(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
         populateStatementParameters(stmt, args);

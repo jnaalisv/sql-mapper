@@ -27,21 +27,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 
-/**
- * OrmElf
- */
-//CHECKSTYLE:OFF
 public final class OrmElf {
-    /**
-     * Private constructor.
-     */
-    private OrmElf() {
-        // private constructor
-    }
 
-    // ------------------------------------------------------------------------
-    //                               Read Methods
-    // ------------------------------------------------------------------------
+    private OrmElf() {}
 
     /**
      * Load an object by it's ID.  The @Id annotated field(s) of the object is used to
@@ -285,10 +273,6 @@ public final class OrmElf {
     public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
         return OrmWriter.deleteObjectById(connection, clazz, args);
     }
-
-    // ------------------------------------------------------------------------
-    //                             Utility Methods
-    // ------------------------------------------------------------------------
 
     /**
      * Execute the specified SQL as a PreparedStatement with the specified arguments.

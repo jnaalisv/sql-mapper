@@ -28,9 +28,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * OrmWriter
- */
 public class OrmWriter extends OrmBase {
     private static final int CACHE_SIZE = Integer.getInteger("com.zaxxer.sansorm.statementCacheSize", 500);
 
@@ -224,10 +221,6 @@ public class OrmWriter extends OrmBase {
             }
         }
     }
-
-    // -----------------------------------------------------------------------
-    //                      P R I V A T E   M E T H O D S
-    // -----------------------------------------------------------------------
 
     private static <T> PreparedStatement createStatementForInsert(Connection connection, Introspected introspected, String[] columns) throws SQLException {
         String sql = createStatementCache.get(introspected);

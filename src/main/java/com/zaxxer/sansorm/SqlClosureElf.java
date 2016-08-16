@@ -18,12 +18,8 @@ package com.zaxxer.sansorm;
 
 import java.util.List;
 
-/**
- * Provides SQL closures around common query types
- */
 public final class SqlClosureElf {
-    private SqlClosureElf() {
-    }
+    private SqlClosureElf() {}
 
     /**
      * Gets an object by ID from the database.
