@@ -16,7 +16,7 @@
 
 package com.zaxxer.sansorm.internal;
 
-import org.jnaalisv.sqlmapper.SqlGenerator;
+import org.jnaalisv.sqlmapper.CachingSqlGenerator;
 import org.jnaalisv.sqlmapper.TableSpecs;
 import org.jnaalisv.sqlmapper.TypeMapper;
 
@@ -142,7 +142,7 @@ public class OrmWriter extends OrmBase {
 
     public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
 
-        String sql = SqlGenerator.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
+        String sql = CachingSqlGenerator.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
 
         return executeUpdate(connection, sql, args);
     }
@@ -155,7 +155,7 @@ public class OrmWriter extends OrmBase {
     }
 
     private static <T> PreparedStatement createStatementForInsert(Connection connection, TableSpecs tableSpecs) throws SQLException {
-        String sql = SqlGenerator.createStatementForInsertSql(tableSpecs);
+        String sql = CachingSqlGenerator.createStatementForInsertSql(tableSpecs);
         if (tableSpecs.hasGeneratedId()) {
             return connection.prepareStatement(sql, tableSpecs.getIdColumnNames());
         } else {
@@ -164,7 +164,7 @@ public class OrmWriter extends OrmBase {
     }
 
     private static <T> PreparedStatement createStatementForUpdate(Connection connection, TableSpecs tableSpecs) throws SQLException {
-        String sql = SqlGenerator.createStatementForUpdateSql(tableSpecs);
+        String sql = CachingSqlGenerator.createStatementForUpdateSql(tableSpecs);
 
         return connection.prepareStatement(sql);
     }

@@ -16,7 +16,7 @@
 
 package com.zaxxer.sansorm.internal;
 
-import org.jnaalisv.sqlmapper.SqlGenerator;
+import org.jnaalisv.sqlmapper.CachingSqlGenerator;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -134,13 +134,13 @@ public class OrmReader extends OrmBase {
     public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
         Introspected introspected = Introspector.getIntrospected(clazz);
 
-        String where = SqlGenerator.constructWhereSql(introspected.getIdColumnNames());
+        String where = CachingSqlGenerator.constructWhereSql(introspected.getIdColumnNames());
 
         return objectFromClause(connection, clazz, where.toString(), args);
     }
 
     public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
-        String sql = SqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
+        String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             return statementToList(stmt, clazz, args);
@@ -148,7 +148,7 @@ public class OrmReader extends OrmBase {
     }
 
     public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
-        String sql = SqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
+        String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
 
         PreparedStatement stmt = connection.prepareStatement(sql);
 
@@ -156,7 +156,7 @@ public class OrmReader extends OrmBase {
     }
 
     public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
-        String sql = SqlGenerator.countObjectsFromClause(Introspector.getIntrospected(clazz), clause);
+        String sql = CachingSqlGenerator.countObjectsFromClause(Introspector.getIntrospected(clazz), clause);
 
         return numberFromSql(connection, sql, args)
                 .orElseThrow(() -> new RuntimeException("count query returned without results"))
