@@ -46,6 +46,8 @@ public class TypeMapper {
             case Types.DECIMAL:
                 if (object instanceof BigInteger) {
                     return new BigDecimal(((BigInteger) object));
+                } else if (object instanceof BigDecimal) {
+                    return object;
                 }
                 break;
 
