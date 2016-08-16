@@ -16,6 +16,8 @@
 
 package com.zaxxer.sansorm.internal;
 
+import org.jnaalisv.sqlmapper.SqlGenerator;
+import org.jnaalisv.sqlmapper.TableSpecs;
 import org.jnaalisv.sqlmapper.TypeMapper;
 
 import java.sql.Connection;
@@ -32,20 +34,10 @@ public class OrmWriter extends OrmBase {
     private static final int CACHE_SIZE = Integer.getInteger("com.zaxxer.sansorm.statementCacheSize", 500);
 
     private static Map<Introspected, String> createStatementCache;
-    private static Map<Introspected, String> updateStatementCache;
 
     static {
         createStatementCache = Collections.synchronizedMap(new LinkedHashMap<Introspected, String>(CACHE_SIZE) {
             private static final long serialVersionUID = 4559270460685275064L;
-
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<Introspected, String> eldest) {
-                return this.size() > CACHE_SIZE;
-            }
-        });
-
-        updateStatementCache = Collections.synchronizedMap(new LinkedHashMap<Introspected, String>(CACHE_SIZE) {
-            private static final long serialVersionUID = -5324251353646078607L;
 
             @Override
             protected boolean removeEldestEntry(Map.Entry<Introspected, String> eldest) {
@@ -152,7 +144,7 @@ public class OrmWriter extends OrmBase {
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getUpdatableColumns();
 
-        PreparedStatement stmt = createStatementForUpdate(connection, introspected, columnNames);
+        PreparedStatement stmt = createStatementForUpdate(connection, introspected);
         setParamsExecuteClose(target, introspected, columnNames, stmt);
 
         return target;
@@ -210,27 +202,8 @@ public class OrmWriter extends OrmBase {
         }
     }
 
-    private static <T> PreparedStatement createStatementForUpdate(Connection connection, Introspected introspected, String[] columnNames) throws SQLException {
-        String sql = updateStatementCache.get(introspected);
-        if (sql == null) {
-            StringBuilder sqlSB = new StringBuilder("UPDATE ").append(introspected.getTableName()).append(" SET ");
-            for (String column : columnNames) {
-                sqlSB.append(column).append("=?,");
-            }
-            sqlSB.deleteCharAt(sqlSB.length() - 1);
-
-            String[] idColumnNames = introspected.getIdColumnNames();
-            if (idColumnNames.length > 0) {
-                sqlSB.append(" WHERE ");
-                for (String column : idColumnNames) {
-                    sqlSB.append(column).append("=? AND ");
-                }
-                sqlSB.setLength(sqlSB.length() - 5);
-            }
-
-            sql = sqlSB.toString();
-            updateStatementCache.put(introspected, sql);
-        }
+    private static <T> PreparedStatement createStatementForUpdate(Connection connection, TableSpecs tableSpecs) throws SQLException {
+        String sql = SqlGenerator.createStatementForUpdateSql(tableSpecs);
 
         return connection.prepareStatement(sql);
     }

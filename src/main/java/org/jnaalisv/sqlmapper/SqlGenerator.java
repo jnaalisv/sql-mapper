@@ -22,6 +22,15 @@ public final class SqlGenerator {
         }
     });
 
+    private static Map<String, String> updateStatementCache = Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_SIZE) {
+        private static final long serialVersionUID = -5324251353646078607L;
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+            return this.size() > CACHE_SIZE;
+        }
+    });
+
     private SqlGenerator() {}
 
     public static <T> String getColumnsCsv(TableSpecs tableSpecs, String... tablePrefix) {
@@ -147,5 +156,33 @@ public final class SqlGenerator {
         }
 
         return where.toString();
+    }
+
+    public static String createStatementForUpdateSql(TableSpecs tableSpecs) {
+        String sql = updateStatementCache.get(tableSpecs.getTableName());
+        if (sql == null) {
+            StringBuilder sqlSB = new StringBuilder("UPDATE ")
+                    .append(tableSpecs.getTableName())
+                    .append(" SET ");
+
+            for (String column : tableSpecs.getUpdatableColumns()) {
+                sqlSB.append(column).append("=?,");
+            }
+            sqlSB.deleteCharAt(sqlSB.length() - 1);
+
+            String[] idColumnNames = tableSpecs.getIdColumnNames();
+            if (idColumnNames.length > 0) {
+                sqlSB.append(" WHERE ");
+                for (String column : idColumnNames) {
+                    sqlSB.append(column).append("=? AND ");
+                }
+                sqlSB.setLength(sqlSB.length() - 5);
+            }
+
+            sql = sqlSB.toString();
+            updateStatementCache.put(tableSpecs.getTableName(), sql);
+        }
+
+        return sql;
     }
 }

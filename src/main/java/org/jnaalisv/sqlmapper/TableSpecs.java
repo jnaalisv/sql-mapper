@@ -11,4 +11,6 @@ public interface TableSpecs {
         return this.getColumnNames()[0];
     }
 
+    String[] getUpdatableColumns();
+
 }
