@@ -16,8 +16,6 @@
 
 package com.zaxxer.sansorm.internal;
 
-import org.jnaalisv.sqlmapper.CachingSqlGenerator;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,7 +27,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-public class OrmReader extends OrmBase {
+import org.jnaalisv.sqlmapper.CachingSqlGenerator;
+import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
+
+public class OrmReader {
 
     public static <T> List<T> statementToList(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
         try {
@@ -40,7 +41,7 @@ public class OrmReader extends OrmBase {
     }
 
     public static ResultSet statementToResultSet(PreparedStatement stmt, Object... args) throws SQLException {
-        populateStatementParameters(stmt, args);
+        PreparedStatementToolbox.populateStatementParameters(stmt, args);
         return stmt.executeQuery();
     }
 
@@ -85,7 +86,7 @@ public class OrmReader extends OrmBase {
     }
 
     public static <T> Optional<T> statementToObject(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
-        populateStatementParameters(stmt, args);
+        PreparedStatementToolbox.populateStatementParameters(stmt, args);
 
         ResultSet resultSet = null;
         try {
@@ -165,7 +166,7 @@ public class OrmReader extends OrmBase {
 
     public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            populateStatementParameters(stmt, args);
+            PreparedStatementToolbox.populateStatementParameters(stmt, args);
             try (ResultSet resultSet = stmt.executeQuery()) {
                 if (resultSet.next()) {
                     return Optional.of( (Number) resultSet.getObject(1));

@@ -16,18 +16,17 @@
 
 package com.zaxxer.sansorm.internal;
 
-import org.jnaalisv.sqlmapper.CachingSqlGenerator;
-import org.jnaalisv.sqlmapper.TableSpecs;
-import org.jnaalisv.sqlmapper.TypeMapper;
-
 import java.sql.Connection;
-import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 
-public class OrmWriter extends OrmBase {
+import org.jnaalisv.sqlmapper.CachingSqlGenerator;
+import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
+import org.jnaalisv.sqlmapper.TableSpecs;
+
+public class OrmWriter {
 
     public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException {
         Iterator<T> iterableIterator = iterable.iterator();
@@ -41,7 +40,7 @@ public class OrmWriter extends OrmBase {
         String[] columnNames = introspected.getInsertableColumns();
 
         PreparedStatement stmt = createStatementForInsert(connection, introspected);
-        int[] parameterTypes = getParameterTypes(stmt);
+        int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
         for (T item : iterable) {
             setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
@@ -66,7 +65,7 @@ public class OrmWriter extends OrmBase {
         String[] columnNames = introspected.getInsertableColumns();
 
         PreparedStatement stmt = createStatementForInsert(connection, introspected);
-        int[] parameterTypes = getParameterTypes(stmt);
+        int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
         int rowCount = 0;
 
@@ -130,7 +129,7 @@ public class OrmWriter extends OrmBase {
 
     public static int executeUpdate(Connection connection, String sql, Object... args) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            populateStatementParameters(stmt, args);
+            PreparedStatementToolbox.populateStatementParameters(stmt, args);
             return stmt.executeUpdate();
         }
     }
@@ -151,7 +150,7 @@ public class OrmWriter extends OrmBase {
     }
 
     private static <T> void setParamsExecuteClose(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException {
-        int[] parameterTypes = getParameterTypes(stmt);
+        int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
         int parameterIndex = setStatementParameters(stmt, columnNames, parameterTypes, introspected, target);
         // If there is still a parameter left to be set, it's the ID used for an update
@@ -177,34 +176,16 @@ public class OrmWriter extends OrmBase {
         stmt.close();
     }
 
-    private static int[] getParameterTypes(PreparedStatement stmt) throws SQLException {
-        ParameterMetaData metaData = stmt.getParameterMetaData();
-        int[] parameterTypes = new int[metaData.getParameterCount()];
-        for (int parameterIndex = 1; parameterIndex <= metaData.getParameterCount(); parameterIndex++) {
-            parameterTypes[parameterIndex - 1] = metaData.getParameterType(parameterIndex);
-        }
-
-        return parameterTypes;
-    }
-
     public static <T> int setStatementParameters(PreparedStatement stmt, String[] columnNames, int[] parameterTypes, Introspected introspected, T item) throws SQLException {
         int parameterIndex = 1;
         for (String column : columnNames) {
             int parameterType = parameterTypes[parameterIndex - 1];
             Object fieldValue = introspected.get(item, column);
-            setStatementParameter(stmt, parameterIndex, fieldValue, parameterType);
+            PreparedStatementToolbox.setStatementParameter(stmt, parameterIndex, fieldValue, parameterType);
             ++parameterIndex;
         }
 
         return parameterIndex;
     }
 
-    public static void setStatementParameter(PreparedStatement stmt, int parameterIndex, Object entityFieldValue, int parameterType) throws SQLException {
-        Object databaseValue = TypeMapper.mapSqlType(entityFieldValue, parameterType);
-        if (databaseValue == null) {
-            stmt.setNull(parameterIndex, parameterType);
-        } else {
-            stmt.setObject(parameterIndex, databaseValue, parameterType);
-        }
-    }
 }
