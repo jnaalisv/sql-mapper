@@ -20,6 +20,18 @@ public class FailFastResourceProxy<T> implements InvocationHandler {
         this.delegate = delegate;
     }
 
+    public static Connection wrapConnection(final Connection delegate) {
+        return wrap(delegate, Connection.class);
+    }
+
+    public static Statement wrapStatement(final Statement delegate) {
+        return wrap(delegate, Statement.class);
+    }
+
+    public static ResultSet wrapResultSet(final ResultSet delegate) {
+        return wrap(delegate, ResultSet.class);
+    }
+
     public static <T> T wrap(final T delegate, Class<T> delegateClass) {
         FailFastResourceProxy<T> handler = new FailFastResourceProxy<>(delegate);
         return (T) Proxy.newProxyInstance(FailFastResourceProxy.class.getClassLoader(), new Class[]{delegateClass}, handler);

@@ -1,5 +1,7 @@
 package org.jnaalisv.sqlmapper;
 
+import com.zaxxer.sansorm.internal.Introspected;
+import com.zaxxer.sansorm.internal.Introspector;
 import com.zaxxer.sansorm.internal.OrmReader;
 
 import javax.sql.DataSource;
@@ -8,6 +10,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
+
+import static com.zaxxer.sansorm.internal.OrmReader.statementToObject;
 
 public class NewSql {
 
@@ -49,11 +54,24 @@ public class NewSql {
         return connectAndHandleErrors(connection -> prepareAndConsume(connection, sql, statementConsumer));
     }
 
+    private <T> T connectPrepareConsume(SqlProducer sqlProducer, PreparedStatementConsumer<T> statementConsumer) {
+        return connectAndHandleErrors(connection -> prepareAndConsume(connection, sqlProducer.produce(), statementConsumer));
+    }
+
     public final <T> List<T> listQuery(String sql, Class<T> entityClass) {
         return connectPrepareConsume(sql, stmt -> execute(stmt, resultSet -> OrmReader.resultSetToList(resultSet, entityClass)));
     }
 
     public final <T> T entityQuery(String sql, Class<T> entityClass) {
         return connectPrepareConsume(sql, stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, (T) entityClass.newInstance())));
+    }
+
+    public <T> Optional<T> getObjectById(Class<T> type, Object... ids) {
+        return connectPrepareConsume(() -> {
+            Introspected introspected = Introspector.getIntrospected(type);
+            String where = CachingSqlGenerator.constructWhereSql(introspected.getIdColumnNames());
+            return CachingSqlGenerator.generateSelectFromClause(introspected, where);
+
+        }, stmt -> execute(stmt, resultSet -> OrmReader.statementToObject(stmt, type, ids)));
     }
 }
