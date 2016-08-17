@@ -1,5 +1,6 @@
 package org.jnaalisv.sqlmapper;
 
+import com.zaxxer.sansorm.SqlClosureElf;
 import org.jnaalisv.sqlmapper.entities.Product;
 import org.jnaalisv.sqlmapper.spring.DataSourceConfig;
 import org.junit.Before;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
 @Sql({"classpath:test-data.sql"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -223,4 +225,15 @@ public class SqlExecutorTest {
         List<Product> products = sqlExecutor.executeQuery(Product.class, "select id, product_code from products");
         assertThat(products.size()).isEqualTo(3);
     }
+
+    @Test
+    public void testExceptionHandling() {
+        Throwable thrown = catchThrowable(() -> sqlExecutor.countObjectsFromClause(Product.class, "invalid"));
+
+        assertThat(thrown)
+                .isInstanceOf(RuntimeException.class)
+                .hasCauseInstanceOf(SQLException.class)
+                .hasMessageContaining("Column \"INVALID\" not found; SQL statement");
+    }
+
 }

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
 @Sql({"classpath:test-data.sql"})
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -221,4 +222,15 @@ public class SqlClosureElfTest {
         List<Product> products = SqlClosureElf.executeQuery(Product.class, "select id, product_code from products");
         assertThat(products.size()).isEqualTo(3);
     }
+
+    @Test
+    public void testExceptionHandling() {
+        Throwable thrown = catchThrowable(() -> SqlClosureElf.countObjectsFromClause(Product.class, "invalid"));
+
+        assertThat(thrown)
+                .isInstanceOf(RuntimeException.class)
+                .hasCauseInstanceOf(SQLException.class)
+                .hasMessageContaining("Column \"INVALID\" not found; SQL statement");
+    }
+
 }

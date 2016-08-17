@@ -1,6 +1,7 @@
 package org.jnaalisv.sqlmapper;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
@@ -39,12 +40,18 @@ public class FailFastOnResourceLeakConnectionProxy implements InvocationHandler 
             }
         }
 
-        final Object ret = method.invoke(delegate, args);
+        try {
+            final Object ret = method.invoke(delegate, args);
 
-        if (ret instanceof Statement) {
-            statements.add((Statement) ret);
+            if (ret instanceof Statement) {
+                statements.add((Statement) ret);
+            }
+
+            return ret;
+        } catch(InvocationTargetException ite) {
+            throw ite.getTargetException();
+        }  catch(Throwable t) {
+            throw new RuntimeException(t);
         }
-
-        return ret;
     }
 }
