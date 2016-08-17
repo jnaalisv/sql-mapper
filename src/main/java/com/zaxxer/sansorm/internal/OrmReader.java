@@ -33,11 +33,23 @@ import java.util.Set;
 
 public class OrmReader {
 
-    private static <T> void hydrateEntity(Introspected introspected, T target, ResultSet resultSet, int columnCount, String[] columnNames, Set<String> ignoredColumns) throws IllegalAccessException, SQLException, IOException {
+    private static class ResultSetColumnInfo {
+        public final int columnCount;
+        public final String[] columnNames;
+        public ResultSetColumnInfo(ResultSetMetaData metaData) throws SQLException {
+            columnCount = metaData.getColumnCount();
+            columnNames = new String[columnCount];
+            for (int column = columnCount; column > 0; column--) {
+                columnNames[column - 1] = metaData.getColumnName(column).toLowerCase();
+            }
+        }
+    }
 
-        for (int column = columnCount; column > 0; column--) {
+    private static <T> void hydrateEntity(Introspected introspected, T target, ResultSet resultSet, ResultSetColumnInfo resultSetColumnInfo, Set<String> ignoredColumns) throws IllegalAccessException, SQLException, IOException {
+
+        for (int column = resultSetColumnInfo.columnCount; column > 0; column--) {
             Object columnValue = resultSet.getObject(column);
-            String columnName = columnNames[column - 1];
+            String columnName = resultSetColumnInfo.columnNames[column - 1];
 
             if (columnValue == null || ignoredColumns.contains(columnName)) {
                 continue;
@@ -49,21 +61,15 @@ public class OrmReader {
 
     public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
 
-        final List<T> list = new ArrayList<T>();
+        final List<T> list = new ArrayList<>();
 
-        final ResultSetMetaData metaData = resultSet.getMetaData();
-        final int columnCount = metaData.getColumnCount();
-        final String[] columnNames = new String[columnCount];
-        for (int column = columnCount; column > 0; column--) {
-            columnNames[column - 1] = metaData.getColumnName(column).toLowerCase();
-        }
-
+        ResultSetColumnInfo resultSetColumnInfo = new ResultSetColumnInfo(resultSet.getMetaData());
         Introspected introspected = Introspector.getIntrospected(targetClass);
 
         while (resultSet.next()) {
             T target = targetClass.newInstance();
 
-            hydrateEntity(introspected, target, resultSet, columnCount, columnNames, Collections.emptySet());
+            hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, Collections.emptySet());
 
             list.add(target);
         }
@@ -72,16 +78,10 @@ public class OrmReader {
 
     public static <T> T resultSetToObject(ResultSet resultSet, T target, Set<String> ignoredColumns) throws SQLException, IllegalAccessException, InstantiationException, IOException {
 
-        ResultSetMetaData metaData = resultSet.getMetaData();
+        ResultSetColumnInfo resultSetColumnInfo = new ResultSetColumnInfo(resultSet.getMetaData());
         Introspected introspected = Introspector.getIntrospected(target.getClass());
 
-        final int columnCount = metaData.getColumnCount();
-        final String[] columnNames = new String[columnCount];
-        for (int column = columnCount; column > 0; column--) {
-            columnNames[column - 1] = metaData.getColumnName(column).toLowerCase();
-        }
-
-        hydrateEntity(introspected, target, resultSet, columnCount, columnNames, ignoredColumns);
+        hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, ignoredColumns);
 
         return target;
     }
