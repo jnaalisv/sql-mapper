@@ -77,7 +77,10 @@ public class OrmReader {
 
     public static <T> List<T> listFromQuery(Connection connection, Class<T> entityClass, String sql, Object... args) throws SQLException, IllegalAccessException, IOException, InstantiationException {
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            try (ResultSet resultSet = statementToResultSet(preparedStatement, args)) {
+
+            PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 return OrmReader.resultSetToList(resultSet, entityClass);
             }
         }
@@ -146,10 +149,5 @@ public class OrmReader {
                 return Optional.empty();
             }
         }
-    }
-
-    public static ResultSet statementToResultSet(PreparedStatement stmt, Object... args) throws SQLException {
-        PreparedStatementToolbox.populateStatementParameters(stmt, args);
-        return stmt.executeQuery();
     }
 }
