@@ -75,15 +75,18 @@ public class OrmReader {
         return list;
     }
 
-    public static <T> T resultSetToObject(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+    public static <T> Optional<T> resultSetToObject(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
 
         ResultSetColumnInfo resultSetColumnInfo = new ResultSetColumnInfo(resultSet.getMetaData());
         Introspected introspected = Introspector.getIntrospected(targetClass);
 
-        T target = (T) targetClass.newInstance();
-        hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, Collections.emptySet());
+        if (resultSet.next()) {
 
-        return target;
+            T target = (T) targetClass.newInstance();
+            hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, Collections.emptySet());
+            return Optional.of(target);
+        }
+        return Optional.empty();
     }
 
     public static <T> Optional<T> statementToObject(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException, IllegalAccessException, InstantiationException, IOException {
@@ -91,10 +94,7 @@ public class OrmReader {
         PreparedStatementToolbox.populateStatementParameters(stmt, args);
 
         try (ResultSet resultSet = stmt.executeQuery()) {
-            if (resultSet.next()) {
-                return Optional.of(resultSetToObject(resultSet, clazz));
-            }
-            return Optional.empty();
+            return resultSetToObject(resultSet, clazz);
         }
     }
 
