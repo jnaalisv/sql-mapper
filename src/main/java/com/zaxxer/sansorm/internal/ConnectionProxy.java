@@ -42,7 +42,12 @@ public class ConnectionProxy implements InvocationHandler {
         if ("close".equals(method.getName())) {
             try {
                 for (Statement stmt : statements) {
-                    stmt.close();
+                    if (stmt.isClosed()) {
+
+                    } else {
+                        stmt.close();
+                        throw new RuntimeException(stmt + " was open!");
+                    }
                 }
             } finally {
                 statements.clear();
