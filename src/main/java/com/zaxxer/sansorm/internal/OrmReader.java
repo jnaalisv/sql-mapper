@@ -16,6 +16,9 @@
 
 package com.zaxxer.sansorm.internal;
 
+import org.jnaalisv.sqlmapper.CachingSqlGenerator;
+import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,9 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
-import org.jnaalisv.sqlmapper.CachingSqlGenerator;
-import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
 
 public class OrmReader {
 
@@ -137,7 +137,7 @@ public class OrmReader {
 
         String where = CachingSqlGenerator.constructWhereSql(introspected.getIdColumnNames());
 
-        return objectFromClause(connection, clazz, where.toString(), args);
+        return objectFromClause(connection, clazz, where, args);
     }
 
     public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
