@@ -1,11 +1,14 @@
 package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.SqlFunction;
+import com.zaxxer.sansorm.internal.ConnectionProxy;
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -59,7 +62,7 @@ public class SqlExecutor {
     }
 
     public final <T> T execute(SqlFunction<T> sqlFunction) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = ConnectionProxy.wrapConnection(dataSource.getConnection()) ) {
             return sqlFunction.execute(connection);
         } catch (SQLException e) {
             if (e.getNextException() != null) {
@@ -77,7 +80,13 @@ public class SqlExecutor {
         return execute(connection -> OrmWriter.insertListNotBatched(connection, iterable));
     }
 
-    public <T> List<T> executeQuery(Class<T> targetClass, final String sql, final Object... args) {
-        return execute(connection -> OrmReader.resultSetToList(OrmReader.statementToResultSet(connection.prepareStatement(sql), args), targetClass));
+    public <T> List<T> executeQuery(Class<T> entityClass, final String sql, final Object... args) {
+        return execute(connection -> {
+                try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+                    ResultSet resultSet = OrmReader.statementToResultSet(preparedStatement, args);
+                    return OrmReader.resultSetToList(resultSet, entityClass);
+                }
+            }
+        );
     }
 }
