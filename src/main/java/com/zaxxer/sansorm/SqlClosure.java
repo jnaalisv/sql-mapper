@@ -22,7 +22,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class SqlClosure<T> {
+public abstract class SqlClosure<T> {
     private static DataSource defaultDataSource;
 
     private DataSource dataSource;
@@ -65,7 +65,5 @@ public class SqlClosure<T> {
         }
     }
 
-    protected T execute(final Connection connection) throws Exception {
-        throw new AbstractMethodError("You must provide an implementation of this method.");
-    }
+    protected abstract T execute(final Connection connection) throws Exception;
 }
