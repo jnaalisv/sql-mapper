@@ -81,7 +81,7 @@ public class OrmReader {
             PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                return OrmReader.resultSetToList(resultSet, entityClass);
+                return resultSetToList(resultSet, entityClass);
             }
         }
     }
@@ -105,12 +105,16 @@ public class OrmReader {
         return Optional.empty();
     }
 
-    public static <T> Optional<T> statementToObject(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
+        String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
 
-        PreparedStatementToolbox.populateStatementParameters(stmt, args);
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
 
-        try (ResultSet resultSet = stmt.executeQuery()) {
-            return resultSetToObject(resultSet, clazz);
+            PreparedStatementToolbox.populateStatementParameters(stmt, args);
+
+            try (ResultSet resultSet = stmt.executeQuery()) {
+                return resultSetToObject(resultSet, clazz);
+            }
         }
     }
 
@@ -120,15 +124,6 @@ public class OrmReader {
         String where = CachingSqlGenerator.constructWhereSql(introspected.getIdColumnNames());
 
         return objectFromClause(connection, clazz, where, args);
-    }
-
-
-    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
-        String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            return statementToObject(stmt, clazz, args);
-        }
     }
 
     public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, IllegalAccessException, InstantiationException {
@@ -141,7 +136,9 @@ public class OrmReader {
 
     public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+
             PreparedStatementToolbox.populateStatementParameters(stmt, args);
+
             try (ResultSet resultSet = stmt.executeQuery()) {
                 if (resultSet.next()) {
                     return Optional.of( (Number) resultSet.getObject(1));
