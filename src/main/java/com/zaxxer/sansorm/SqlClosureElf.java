@@ -157,8 +157,9 @@ public final class SqlClosureElf {
     public static <T> List<T> executeQuery(Class<T> targetClass, final String sql, final Object... args) {
         return SqlClosure.execute(connection -> {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-                    ResultSet resultSet = OrmReader.statementToResultSet(preparedStatement, args);
-                    return OrmReader.resultSetToList(resultSet, targetClass);
+                    try (ResultSet resultSet = OrmReader.statementToResultSet(preparedStatement, args)) {
+                        return OrmReader.resultSetToList(resultSet, targetClass);
+                    }
                 }
             }
         );

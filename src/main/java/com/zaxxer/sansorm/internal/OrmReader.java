@@ -41,7 +41,6 @@ public class OrmReader {
     public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
         List<T> list = new ArrayList<T>();
         if (!resultSet.next()) {
-            resultSet.close();
             return list;
         }
 

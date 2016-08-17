@@ -88,8 +88,9 @@ public class SqlExecutor {
     public <T> List<T> executeQuery(Class<T> entityClass, final String sql, final Object... args) {
         return execute(connection -> {
                 try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-                    ResultSet resultSet = OrmReader.statementToResultSet(preparedStatement, args);
-                    return OrmReader.resultSetToList(resultSet, entityClass);
+                    try (ResultSet resultSet = OrmReader.statementToResultSet(preparedStatement, args)) {
+                        return OrmReader.resultSetToList(resultSet, entityClass);
+                    }
                 }
             }
         );
