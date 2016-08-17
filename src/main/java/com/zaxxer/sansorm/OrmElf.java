@@ -211,25 +211,4 @@ public final class OrmElf {
         return OrmWriter.executeUpdate(connection, sql, args);
     }
 
-    /**
-     * Get a SQL "IN" clause for the number of items.
-     *
-     * @param items a list of items
-     * @return a parenthetical String with <code>item.length</code> placeholders, eg. " (?,?,?,?) ".
-     */
-    public static String getInClausePlaceholders(final String... items) {
-        final StringBuilder sb = new StringBuilder(" (");
-
-        if (items.length == 0) {
-            sb.append("'s0me n0n-ex1st4nt v4luu'");
-        } else {
-            for (int i = 0; i < items.length; i++) {
-                sb.append("?,");
-            }
-
-            sb.setLength(sb.length() - 1);
-        }
-
-        return sb.append(") ").toString();
-    }
 }
