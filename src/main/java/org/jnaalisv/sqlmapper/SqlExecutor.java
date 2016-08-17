@@ -1,7 +1,6 @@
 package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.SqlFunction;
-import com.zaxxer.sansorm.internal.ConnectionProxy;
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
 
@@ -62,7 +61,7 @@ public class SqlExecutor {
     }
 
     public final <T> T execute(SqlFunction<T> sqlFunction) {
-        try (Connection connection = ConnectionProxy.wrapConnection(dataSource.getConnection()) ) {
+        try (Connection connection = FailFastOnResourceLeakConnectionProxy.wrapConnection(dataSource.getConnection()) ) {
             return sqlFunction.execute(connection);
         } catch (SQLException e) {
             if (e.getNextException() != null) {
