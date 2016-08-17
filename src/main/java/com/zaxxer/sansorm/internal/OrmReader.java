@@ -86,24 +86,19 @@ public class OrmReader {
     }
 
     public static <T> Optional<T> statementToObject(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
+
         PreparedStatementToolbox.populateStatementParameters(stmt, args);
 
-        ResultSet resultSet = null;
-        try {
-            resultSet = stmt.executeQuery();
+        try (ResultSet resultSet = stmt.executeQuery()) {
+
             if (resultSet.next()) {
                 T target = (T) clazz.newInstance();
                 return Optional.of(resultSetToObject(resultSet, target));
             }
-
             return Optional.empty();
-        } catch (Exception e) {
+
+        } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
-        } finally {
-            if (resultSet != null) {
-                resultSet.close();
-            }
-            stmt.close();
         }
     }
 
@@ -151,9 +146,9 @@ public class OrmReader {
     public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
         String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
 
-        PreparedStatement stmt = connection.prepareStatement(sql);
-
-        return statementToObject(stmt, clazz, args);
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            return statementToObject(stmt, clazz, args);
+        }
     }
 
     public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
