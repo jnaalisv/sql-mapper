@@ -1,13 +1,12 @@
 package org.jnaalisv.sqlmapper;
 
+import com.zaxxer.sansorm.SqlClosure;
 import com.zaxxer.sansorm.SqlFunction;
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -86,13 +85,6 @@ public class SqlExecutor {
     }
 
     public <T> List<T> executeQuery(Class<T> entityClass, final String sql, final Object... args) {
-        return execute(connection -> {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-                    try (ResultSet resultSet = OrmReader.statementToResultSet(preparedStatement, args)) {
-                        return OrmReader.resultSetToList(resultSet, entityClass);
-                    }
-                }
-            }
-        );
+        return SqlClosure.execute(connection -> OrmReader.listFromQuery(connection, entityClass, sql, args));
     }
 }

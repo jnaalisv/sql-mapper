@@ -18,8 +18,6 @@ package com.zaxxer.sansorm;
 
 import com.zaxxer.sansorm.internal.OrmReader;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -155,13 +153,6 @@ public final class SqlClosureElf {
     }
 
     public static <T> List<T> executeQuery(Class<T> targetClass, final String sql, final Object... args) {
-        return SqlClosure.execute(connection -> {
-                try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-                    try (ResultSet resultSet = OrmReader.statementToResultSet(preparedStatement, args)) {
-                        return OrmReader.resultSetToList(resultSet, targetClass);
-                    }
-                }
-            }
-        );
+        return SqlClosure.execute(connection -> OrmReader.listFromQuery(connection, targetClass, sql, args));
     }
 }

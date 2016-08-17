@@ -75,14 +75,17 @@ public class OrmReader {
         return list;
     }
 
-    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
-        String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            try (ResultSet resultSet = statementToResultSet(stmt, args)) {
-                return resultSetToList(resultSet, clazz);
+    public static <T> List<T> listFromQuery(Connection connection, Class<T> entityClass, String sql, Object... args) throws SQLException, IllegalAccessException, IOException, InstantiationException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            try (ResultSet resultSet = statementToResultSet(preparedStatement, args)) {
+                return OrmReader.resultSetToList(resultSet, entityClass);
             }
         }
+    }
+
+    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
+        String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
+        return listFromQuery(connection, clazz, sql, args);
     }
 
     public static <T> Optional<T> resultSetToObject(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
