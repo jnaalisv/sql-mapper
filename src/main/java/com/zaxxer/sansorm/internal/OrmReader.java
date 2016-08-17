@@ -61,14 +61,13 @@ public class OrmReader {
 
     public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
 
-        final List<T> list = new ArrayList<>();
-
         ResultSetColumnInfo resultSetColumnInfo = new ResultSetColumnInfo(resultSet.getMetaData());
         Introspected introspected = Introspector.getIntrospected(targetClass);
 
+        final List<T> list = new ArrayList<>();
         while (resultSet.next()) {
-            T target = targetClass.newInstance();
 
+            T target = targetClass.newInstance();
             hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, Collections.emptySet());
 
             list.add(target);
@@ -76,12 +75,13 @@ public class OrmReader {
         return list;
     }
 
-    public static <T> T resultSetToObject(ResultSet resultSet, T target, Set<String> ignoredColumns) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+    public static <T> T resultSetToObject(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
 
         ResultSetColumnInfo resultSetColumnInfo = new ResultSetColumnInfo(resultSet.getMetaData());
-        Introspected introspected = Introspector.getIntrospected(target.getClass());
+        Introspected introspected = Introspector.getIntrospected(targetClass);
 
-        hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, ignoredColumns);
+        T target = (T) targetClass.newInstance();
+        hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, Collections.emptySet());
 
         return target;
     }
@@ -92,8 +92,7 @@ public class OrmReader {
 
         try (ResultSet resultSet = stmt.executeQuery()) {
             if (resultSet.next()) {
-                T target = (T) clazz.newInstance();
-                return Optional.of(resultSetToObject(resultSet, target, Collections.emptySet()));
+                return Optional.of(resultSetToObject(resultSet, clazz));
             }
             return Optional.empty();
         }
