@@ -122,23 +122,6 @@ public final class OrmElf {
     }
 
     /**
-     * This method will iterate over a ResultSet that contains columns that map to the
-     * target class and return a list of target instances.  <b>Note, this assumes that
-     * ResultSet.next() has <i>NOT</i> been called before calling this method.</b>
-     * <p>
-     * <b>The entire ResultSet will be consumed and closed.</b>
-     *
-     * @param resultSet   a {@link ResultSet}
-     * @param targetClass the target class
-     * @param <T>         the class template
-     * @return a list of instance of the target class, or an empty list
-     * @throws SQLException if a {@link SQLException} occurs
-     */
-    public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, InstantiationException, IllegalAccessException, IOException {
-        return OrmReader.resultSetToList(resultSet, targetClass);
-    }
-
-    /**
      * Insert a collection of objects in a non-batched manner (i.e. using iteration and individual INSERTs).
      *
      * @param connection a SQL connection
