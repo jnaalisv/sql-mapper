@@ -32,20 +32,12 @@ import java.util.Set;
 
 public class OrmReader {
 
-    public static <T> List<T> statementToList(PreparedStatement stmt, Class<T> clazz, Object... args) throws SQLException {
-        try {
-            return resultSetToList(statementToResultSet(stmt, args), clazz);
-        } finally {
-            stmt.close();
-        }
-    }
-
     public static ResultSet statementToResultSet(PreparedStatement stmt, Object... args) throws SQLException {
         PreparedStatementToolbox.populateStatementParameters(stmt, args);
         return stmt.executeQuery();
     }
 
-    public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException {
+    public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException {
         List<T> list = new ArrayList<T>();
         if (!resultSet.next()) {
             resultSet.close();
@@ -61,26 +53,19 @@ public class OrmReader {
             columnNames[column - 1] = metaData.getColumnName(column).toLowerCase();
         }
 
-        try {
-            do {
-                T target = targetClass.newInstance();
-                list.add(target);
-                for (int column = columnCount; column > 0; column--) {
-                    Object columnValue = resultSet.getObject(column);
-                    if (columnValue == null) {
-                        continue;
-                    }
-
-                    String columnName = columnNames[column - 1];
-                    introspected.set(target, columnName, columnValue);
+        do {
+            T target = targetClass.newInstance();
+            list.add(target);
+            for (int column = columnCount; column > 0; column--) {
+                Object columnValue = resultSet.getObject(column);
+                if (columnValue == null) {
+                    continue;
                 }
-            } while (resultSet.next());
 
-            resultSet.close();
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                String columnName = columnNames[column - 1];
+                introspected.set(target, columnName, columnValue);
+            }
+        } while (resultSet.next());
 
         return list;
     }
@@ -135,11 +120,13 @@ public class OrmReader {
         return objectFromClause(connection, clazz, where, args);
     }
 
-    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
+    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException {
         String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            return statementToList(stmt, clazz, args);
+            try (ResultSet resultSet = statementToResultSet(stmt, args)) {
+                return resultSetToList(resultSet, clazz);
+            }
         }
     }
 

@@ -16,15 +16,15 @@
 
 package com.zaxxer.sansorm.internal;
 
+import org.jnaalisv.sqlmapper.CachingSqlGenerator;
+import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
+import org.jnaalisv.sqlmapper.TableSpecs;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
-
-import org.jnaalisv.sqlmapper.CachingSqlGenerator;
-import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
-import org.jnaalisv.sqlmapper.TableSpecs;
 
 public class OrmWriter {
 
@@ -39,18 +39,17 @@ public class OrmWriter {
 
         String[] columnNames = introspected.getInsertableColumns();
 
-        PreparedStatement stmt = createStatementForInsert(connection, introspected);
-        int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
+        try (PreparedStatement stmt = prepareStatementForInsert(connection, introspected)) {
+            int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
-        for (T item : iterable) {
-            setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
-            stmt.addBatch();
-            stmt.clearParameters();
+            for (T item : iterable) {
+                setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
+                stmt.addBatch();
+                stmt.clearParameters();
+            }
+
+            return stmt.executeBatch();
         }
-
-        int[] updateCounts = stmt.executeBatch();
-        stmt.close();
-        return updateCounts;
     }
 
     public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws SQLException {
@@ -61,34 +60,31 @@ public class OrmWriter {
 
         Class<?> clazz = iterableIterator.next().getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
-        String[] idColumnNames = introspected.getIdColumnNames();
         String[] columnNames = introspected.getInsertableColumns();
 
-        PreparedStatement stmt = createStatementForInsert(connection, introspected);
-        int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
+        try (PreparedStatement stmt = prepareStatementForInsert(connection, introspected)) {
+            int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
-        int rowCount = 0;
+            int rowCount = 0;
 
-        for (T item : iterable) {
-            setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
+            for (T item : iterable) {
+                setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
 
-            rowCount += stmt.executeUpdate();
+                rowCount += stmt.executeUpdate();
 
-            // Set auto-generated ID
-            ResultSet generatedKeys = stmt.getGeneratedKeys();
-            if (generatedKeys != null) {
-                final String idColumn = idColumnNames[0];
-                while (generatedKeys.next()) {
-                    introspected.set(item, idColumn, generatedKeys.getObject(1));
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys != null) {
+                        final String idColumn = introspected.getFirstColumnNames();
+                        while (generatedKeys.next()) {
+                            introspected.set(item, idColumn, generatedKeys.getObject(1));
+                        }
+                    }
                 }
-                generatedKeys.close();
+
+                stmt.clearParameters();
             }
-
-            stmt.clearParameters();
+            return rowCount;
         }
-        stmt.close();
-
-        return rowCount;
     }
 
     public static <T> T insertObject(Connection connection, T target) throws SQLException {
@@ -96,21 +92,24 @@ public class OrmWriter {
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
 
-        PreparedStatement stmt = createStatementForInsert(connection, introspected);
-        setParamsExecuteClose(target, introspected, columnNames, stmt);
+        try (PreparedStatement stmt = prepareStatementForInsert(connection, introspected)) {
+            setParamsExecute(target, introspected, columnNames, stmt);
 
-        return target;
+            return target;
+        }
     }
 
     public static <T> T updateObject(Connection connection, T target) throws SQLException {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
-        String[] columnNames = introspected.getUpdatableColumns();
+        String sql = CachingSqlGenerator.createStatementForUpdateSql(introspected);
 
-        PreparedStatement stmt = createStatementForUpdate(connection, introspected);
-        setParamsExecuteClose(target, introspected, columnNames, stmt);
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
 
-        return target;
+            setParamsExecute(target, introspected, introspected.getUpdatableColumns(), stmt);
+
+            return target;
+        }
     }
 
     public static <T> int deleteObject(Connection connection, T target) throws SQLException {
@@ -134,7 +133,7 @@ public class OrmWriter {
         }
     }
 
-    private static <T> PreparedStatement createStatementForInsert(Connection connection, TableSpecs tableSpecs) throws SQLException {
+    private static <T> PreparedStatement prepareStatementForInsert(Connection connection, TableSpecs tableSpecs) throws SQLException {
         String sql = CachingSqlGenerator.createStatementForInsertSql(tableSpecs);
         if (tableSpecs.hasGeneratedId()) {
             return connection.prepareStatement(sql, tableSpecs.getIdColumnNames());
@@ -143,13 +142,7 @@ public class OrmWriter {
         }
     }
 
-    private static <T> PreparedStatement createStatementForUpdate(Connection connection, TableSpecs tableSpecs) throws SQLException {
-        String sql = CachingSqlGenerator.createStatementForUpdateSql(tableSpecs);
-
-        return connection.prepareStatement(sql);
-    }
-
-    private static <T> void setParamsExecuteClose(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException {
+    private static <T> int setParamsExecute(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException {
         int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
         int parameterIndex = setStatementParameters(stmt, columnNames, parameterTypes, introspected, target);
@@ -161,19 +154,17 @@ public class OrmWriter {
             }
         }
 
-        stmt.executeUpdate();
+        int rowCount = stmt.executeUpdate();
 
         if (introspected.hasGeneratedId()) {
-            // Set auto-generated ID
-            final String idColumn = introspected.getIdColumnNames()[0];
-            ResultSet generatedKeys = stmt.getGeneratedKeys();
-            if (generatedKeys != null && generatedKeys.next()) {
-                introspected.set(target, idColumn, generatedKeys.getObject(1));
-                generatedKeys.close();
+            
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys != null && generatedKeys.next()) {
+                    introspected.set(target, introspected.getFirstColumnNames(), generatedKeys.getObject(1));
+                }
             }
         }
-
-        stmt.close();
+        return rowCount;
     }
 
     public static <T> int setStatementParameters(PreparedStatement stmt, String[] columnNames, int[] parameterTypes, Introspected introspected, T item) throws SQLException {

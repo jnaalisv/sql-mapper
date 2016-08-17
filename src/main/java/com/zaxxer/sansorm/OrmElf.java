@@ -86,7 +86,7 @@ public final class OrmElf {
      * @return a list of populated objects
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
+    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, IllegalAccessException, InstantiationException {
         return OrmReader.listFromClause(connection, clazz, clause, args);
     }
 
@@ -133,7 +133,7 @@ public final class OrmElf {
      * @return a list of instance of the target class, or an empty list
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException {
+    public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, InstantiationException, IllegalAccessException {
         return OrmReader.resultSetToList(resultSet, targetClass);
     }
 

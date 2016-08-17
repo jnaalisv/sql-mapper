@@ -41,37 +41,31 @@ public class SqlClosure<T> {
     public static final <V> V execute(final SqlFunction<V> functional) {
         return new SqlClosure<V>() {
             @Override
-            public V execute(Connection connection) throws SQLException {
+            public V execute(Connection connection) throws SQLException, IllegalAccessException, InstantiationException {
                 return functional.execute(connection);
             }
         }.execute();
     }
 
     public final T execute() {
-        Connection connection = null;
-        try {
-            connection = FailFastOnResourceLeakConnectionProxy.wrapConnection(dataSource.getConnection());
 
+        try (Connection connection = FailFastOnResourceLeakConnectionProxy.wrapConnection(dataSource.getConnection())) {
             return execute(connection);
+        }
 
-        } catch (SQLException e) {
+        catch (SQLException e) {
             if (e.getNextException() != null) {
                 e = e.getNextException();
             }
-
             throw new RuntimeException(e);
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
+        }
 
-                }
-            }
+        catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    protected T execute(final Connection connection) throws SQLException {
+    protected T execute(final Connection connection) throws SQLException, IllegalAccessException, InstantiationException {
         throw new AbstractMethodError("You must provide an implementation of this method.");
     }
 }

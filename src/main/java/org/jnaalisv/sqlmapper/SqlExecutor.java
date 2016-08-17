@@ -63,10 +63,16 @@ public class SqlExecutor {
     public final <T> T execute(SqlFunction<T> sqlFunction) {
         try (Connection connection = FailFastOnResourceLeakConnectionProxy.wrapConnection(dataSource.getConnection()) ) {
             return sqlFunction.execute(connection);
-        } catch (SQLException e) {
+        }
+
+        catch (SQLException e) {
             if (e.getNextException() != null) {
                 e = e.getNextException();
             }
+            throw new RuntimeException(e);
+        }
+
+        catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }
     }
