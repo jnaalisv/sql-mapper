@@ -41,7 +41,7 @@ public class SqlClosure<T> {
     public static final <V> V execute(final SqlFunction<V> functional) {
         return new SqlClosure<V>() {
             @Override
-            public V execute(Connection connection) throws SQLException, IllegalAccessException, InstantiationException {
+            public V execute(Connection connection) throws Exception {
                 return functional.execute(connection);
             }
         }.execute();
@@ -60,12 +60,12 @@ public class SqlClosure<T> {
             throw new RuntimeException(e);
         }
 
-        catch (IllegalAccessException | InstantiationException e) {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    protected T execute(final Connection connection) throws SQLException, IllegalAccessException, InstantiationException {
+    protected T execute(final Connection connection) throws Exception {
         throw new AbstractMethodError("You must provide an implementation of this method.");
     }
 }

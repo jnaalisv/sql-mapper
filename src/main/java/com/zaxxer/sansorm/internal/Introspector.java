@@ -18,7 +18,7 @@ public final class Introspector {
 
     private Introspector() {}
 
-    public static Introspected getIntrospected(Class<?> clazz) {
+    public static Introspected getIntrospected(Class<?> clazz) throws InstantiationException, IllegalAccessException {
         Introspected introspected = descriptorMap.get(clazz);
         if (introspected != null) {
             return introspected;

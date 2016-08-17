@@ -72,7 +72,7 @@ public class SqlExecutor {
             throw new RuntimeException(e);
         }
 
-        catch (IllegalAccessException | InstantiationException e) {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

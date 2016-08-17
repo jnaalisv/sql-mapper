@@ -7,10 +7,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class IntrospectedTest {
 
-    private Introspected introspectedProduct = Introspector.getIntrospected(Product.class);
-
     @Test
-    public void test() {
+    public void test() throws IllegalAccessException, InstantiationException {
+
+        Introspected introspectedProduct = Introspector.getIntrospected(Product.class);
 
         assertThat(introspectedProduct.hasGeneratedId()).isTrue();
 

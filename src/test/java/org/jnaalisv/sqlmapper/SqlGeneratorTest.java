@@ -2,13 +2,19 @@ package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.internal.Introspector;
 import org.jnaalisv.sqlmapper.entities.Product;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SqlGeneratorTest {
 
-    private TableSpecs tableSpecs = Introspector.getIntrospected(Product.class);
+    private TableSpecs tableSpecs;
+
+    @Before
+    public void initTestFixture() throws IllegalAccessException, InstantiationException {
+        tableSpecs = Introspector.getIntrospected(Product.class);
+    }
 
     @Test
     public void constructWhereSql() {

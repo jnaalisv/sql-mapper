@@ -20,6 +20,7 @@ import org.jnaalisv.sqlmapper.CachingSqlGenerator;
 import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.TableSpecs;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,7 +29,7 @@ import java.util.Iterator;
 
 public class OrmWriter {
 
-    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException {
+    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException, IllegalAccessException, InstantiationException {
         Iterator<T> iterableIterator = iterable.iterator();
         if (!iterableIterator.hasNext()) {
             return new int[]{};
@@ -52,7 +53,7 @@ public class OrmWriter {
         }
     }
 
-    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws SQLException {
+    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws SQLException, IllegalAccessException, InstantiationException, IOException {
         Iterator<T> iterableIterator = iterable.iterator();
         if (!iterableIterator.hasNext()) {
             return 0;
@@ -87,7 +88,7 @@ public class OrmWriter {
         }
     }
 
-    public static <T> T insertObject(Connection connection, T target) throws SQLException {
+    public static <T> T insertObject(Connection connection, T target) throws SQLException, IOException, IllegalAccessException, InstantiationException {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
@@ -99,7 +100,7 @@ public class OrmWriter {
         }
     }
 
-    public static <T> T updateObject(Connection connection, T target) throws SQLException {
+    public static <T> T updateObject(Connection connection, T target) throws SQLException, IllegalAccessException, InstantiationException, IOException {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String sql = CachingSqlGenerator.createStatementForUpdateSql(introspected);
@@ -112,14 +113,14 @@ public class OrmWriter {
         }
     }
 
-    public static <T> int deleteObject(Connection connection, T target) throws SQLException {
+    public static <T> int deleteObject(Connection connection, T target) throws SQLException, IllegalAccessException, InstantiationException {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
 
         return deleteObjectById(connection, clazz, introspected.getActualIds(target));
     }
 
-    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
+    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, IllegalAccessException, InstantiationException {
 
         String sql = CachingSqlGenerator.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
 
@@ -142,7 +143,7 @@ public class OrmWriter {
         }
     }
 
-    private static <T> int setParamsExecute(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException {
+    private static <T> int setParamsExecute(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException, IOException, IllegalAccessException {
         int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
         int parameterIndex = setStatementParameters(stmt, columnNames, parameterTypes, introspected, target);
@@ -157,7 +158,7 @@ public class OrmWriter {
         int rowCount = stmt.executeUpdate();
 
         if (introspected.hasGeneratedId()) {
-            
+
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys != null && generatedKeys.next()) {
                     introspected.set(target, introspected.getFirstColumnNames(), generatedKeys.getObject(1));
@@ -167,7 +168,7 @@ public class OrmWriter {
         return rowCount;
     }
 
-    public static <T> int setStatementParameters(PreparedStatement stmt, String[] columnNames, int[] parameterTypes, Introspected introspected, T item) throws SQLException {
+    public static <T> int setStatementParameters(PreparedStatement stmt, String[] columnNames, int[] parameterTypes, Introspected introspected, T item) throws SQLException, IllegalAccessException {
         int parameterIndex = 1;
         for (String column : columnNames) {
             int parameterType = parameterTypes[parameterIndex - 1];

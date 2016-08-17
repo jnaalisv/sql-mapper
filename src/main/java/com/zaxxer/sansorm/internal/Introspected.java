@@ -29,12 +29,14 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Clob;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -63,134 +65,122 @@ public class Introspected implements TableSpecs {
     private String[] insertableColumns;
     private String[] updatableColumns;
 
-    Introspected(Class<?> clazz) {
+    Introspected(Class<?> clazz) throws IllegalAccessException, InstantiationException {
 
         Table tableAnnotation = clazz.getAnnotation(Table.class);
         if (tableAnnotation != null) {
             tableName = tableAnnotation.name();
         }
+        ArrayList<FieldColumnInfo> idFcInfos = new ArrayList<FieldColumnInfo>();
 
-        try {
-            ArrayList<FieldColumnInfo> idFcInfos = new ArrayList<FieldColumnInfo>();
+        for (Field field : clazz.getDeclaredFields()) {
+            int modifiers = field.getModifiers();
+            if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers) || Modifier.isTransient(modifiers)) {
+                continue;
+            }
 
-            for (Field field : clazz.getDeclaredFields()) {
-                int modifiers = field.getModifiers();
-                if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers) || Modifier.isTransient(modifiers)) {
-                    continue;
-                }
+            field.setAccessible(true);
 
-                field.setAccessible(true);
+            FieldColumnInfo fcInfo = new FieldColumnInfo(field);
 
-                FieldColumnInfo fcInfo = new FieldColumnInfo(field);
+            processColumnAnnotation(fcInfo);
 
-                processColumnAnnotation(fcInfo);
-
-                Id idAnnotation = field.getAnnotation(Id.class);
-                if (idAnnotation != null) {
-                    // Is it a problem that Class.getDeclaredFields() claims the fields are returned unordered?  We count on order.
-                    idFcInfos.add(fcInfo);
-                    GeneratedValue generatedAnnotation = field.getAnnotation(GeneratedValue.class);
-                    isGeneratedId = (generatedAnnotation != null);
-                    if (isGeneratedId && idFcInfos.size() > 1) {
-                        throw new IllegalStateException("Cannot have multiple @Id annotations and @GeneratedValue at the same time.");
-                    }
-                }
-
-                Enumerated enumAnnotation = field.getAnnotation(Enumerated.class);
-                if (enumAnnotation != null) {
-                    fcInfo.setEnumConstants(enumAnnotation.value());
-                }
-
-                Convert convertAnnotation = field.getAnnotation(Convert.class);
-                if (convertAnnotation != null) {
-                    Class converterClass = convertAnnotation.converter();
-                    if (!AttributeConverter.class.isAssignableFrom(converterClass)) {
-                        throw new RuntimeException(
-                                "Convert annotation only supports converters implementing AttributeConverter");
-                    }
-                    fcInfo.setConverter((AttributeConverter) converterClass.newInstance());
+            Id idAnnotation = field.getAnnotation(Id.class);
+            if (idAnnotation != null) {
+                // Is it a problem that Class.getDeclaredFields() claims the fields are returned unordered?  We count on order.
+                idFcInfos.add(fcInfo);
+                GeneratedValue generatedAnnotation = field.getAnnotation(GeneratedValue.class);
+                isGeneratedId = (generatedAnnotation != null);
+                if (isGeneratedId && idFcInfos.size() > 1) {
+                    throw new IllegalStateException("Cannot have multiple @Id annotations and @GeneratedValue at the same time.");
                 }
             }
 
-            readColumnInfo(idFcInfos);
+            Enumerated enumAnnotation = field.getAnnotation(Enumerated.class);
+            if (enumAnnotation != null) {
+                fcInfo.setEnumConstants(enumAnnotation.value());
+            }
 
-            getInsertableColumns();
-            getUpdatableColumns();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            Convert convertAnnotation = field.getAnnotation(Convert.class);
+            if (convertAnnotation != null) {
+                Class converterClass = convertAnnotation.converter();
+                if (!AttributeConverter.class.isAssignableFrom(converterClass)) {
+                    throw new RuntimeException(
+                            "Convert annotation only supports converters implementing AttributeConverter");
+                }
+                fcInfo.setConverter((AttributeConverter) converterClass.newInstance());
+            }
         }
+
+        readColumnInfo(idFcInfos);
+
+        getInsertableColumns();
+        getUpdatableColumns();
+
     }
 
-    public Object get(Object target, String columnName) {
+    public Object get(Object target, String columnName) throws IllegalAccessException {
         FieldColumnInfo fcInfo = columnToField.get(columnName);
         if (fcInfo == null) {
             throw new RuntimeException("Cannot find field mapped to column " + columnName + " on type " + target.getClass().getCanonicalName());
         }
 
-        try {
-            Object value = fcInfo.field.get(target);
+        Object value = fcInfo.field.get(target);
 
-            if (value == null) {
-                return value;
-            }
-
-            // Fix-up column value for enums, integer as boolean, etc.
-            if (fcInfo.getConverter() != null) {
-                value = fcInfo.getConverter().convertToDatabaseColumn(value);
-            } else if (fcInfo.enumConstants != null) {
-                value = (fcInfo.enumType == EnumType.ORDINAL ? ((Enum<?>) value).ordinal() : ((Enum<?>) value).name());
-            }
-
+        if (value == null) {
             return value;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
+
+        // Fix-up column value for enums, integer as boolean, etc.
+        if (fcInfo.getConverter() != null) {
+            value = fcInfo.getConverter().convertToDatabaseColumn(value);
+        } else if (fcInfo.enumConstants != null) {
+            value = (fcInfo.enumType == EnumType.ORDINAL ? ((Enum<?>) value).ordinal() : ((Enum<?>) value).name());
+        }
+
+        return value;
     }
 
-    public void set(Object target, String columnName, Object value) {
+    public void set(Object target, String columnName, Object value) throws IllegalAccessException, IOException, SQLException {
         FieldColumnInfo fcInfo = columnToField.get(columnName);
         if (fcInfo == null) {
             throw new RuntimeException("Cannot find field mapped to column " + columnName + " on type " + target.getClass().getCanonicalName());
         }
 
-        try {
-            final Class<?> fieldType = fcInfo.fieldType;
-            Class<?> columnType = value.getClass();
-            Object columnValue = value;
+        final Class<?> fieldType = fcInfo.fieldType;
+        Class<?> columnType = value.getClass();
+        Object columnValue = value;
 
-            if (fcInfo.getConverter() != null) {
-                columnValue = fcInfo.getConverter().convertToEntityAttribute(columnValue);
-            } else if (fieldType != columnType) {
-                // Fix-up column value for enums, integer as boolean, etc.
-                if (fieldType == boolean.class && columnType == Integer.class) {
-                    columnValue = (((Integer) columnValue) != 0);
-                } else if (columnType == BigDecimal.class) {
-                    if (fieldType == BigInteger.class) {
-                        columnValue = ((BigDecimal) columnValue).toBigInteger();
-                    } else if (fieldType == Integer.class) {
-                        columnValue = (int) ((BigDecimal) columnValue).longValue();
-                    } else if (fieldType == Long.class) {
-                        columnValue = ((BigDecimal) columnValue).longValue();
-                    }
-                } else if (fcInfo.enumConstants != null) {
-                    columnValue = fcInfo.enumConstants.get(columnValue);
-                } else if (columnValue instanceof Clob) {
-                    columnValue = TypeMapper.readClob((Clob) columnValue);
-                } else if ("PGobject".equals(columnType.getSimpleName()) && "citext".equalsIgnoreCase(((PGobject) columnValue).getType())) {
-                    columnValue = ((PGobject) columnValue).getValue();
-                } else if (columnValue instanceof java.sql.Date && fieldType == LocalDate.class) {
-                    java.sql.Date date = (Date) columnValue;
-                    columnValue = date.toLocalDate();
-                } else if (columnValue instanceof java.sql.Timestamp && fieldType == LocalDateTime.class) {
-                    java.sql.Timestamp timestamp = (Timestamp) columnValue;
-                    columnValue = timestamp.toLocalDateTime();
+        if (fcInfo.getConverter() != null) {
+            columnValue = fcInfo.getConverter().convertToEntityAttribute(columnValue);
+        } else if (fieldType != columnType) {
+            // Fix-up column value for enums, integer as boolean, etc.
+            if (fieldType == boolean.class && columnType == Integer.class) {
+                columnValue = (((Integer) columnValue) != 0);
+            } else if (columnType == BigDecimal.class) {
+                if (fieldType == BigInteger.class) {
+                    columnValue = ((BigDecimal) columnValue).toBigInteger();
+                } else if (fieldType == Integer.class) {
+                    columnValue = (int) ((BigDecimal) columnValue).longValue();
+                } else if (fieldType == Long.class) {
+                    columnValue = ((BigDecimal) columnValue).longValue();
                 }
+            } else if (fcInfo.enumConstants != null) {
+                columnValue = fcInfo.enumConstants.get(columnValue);
+            } else if (columnValue instanceof Clob) {
+                columnValue = TypeMapper.readClob((Clob) columnValue);
+            } else if ("PGobject".equals(columnType.getSimpleName()) && "citext".equalsIgnoreCase(((PGobject) columnValue).getType())) {
+                columnValue = ((PGobject) columnValue).getValue();
+            } else if (columnValue instanceof java.sql.Date && fieldType == LocalDate.class) {
+                java.sql.Date date = (Date) columnValue;
+                columnValue = date.toLocalDate();
+            } else if (columnValue instanceof java.sql.Timestamp && fieldType == LocalDateTime.class) {
+                java.sql.Timestamp timestamp = (Timestamp) columnValue;
+                columnValue = timestamp.toLocalDateTime();
             }
-
-            fcInfo.field.set(target, columnValue);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
+
+        fcInfo.field.set(target, columnValue);
     }
 
     public String[] getColumnNames() {
@@ -269,21 +259,17 @@ public class Introspected implements TableSpecs {
         return (fcInfo != null && fcInfo.updatable);
     }
 
-    public Object[] getActualIds(Object target) {
+    public Object[] getActualIds(Object target) throws IllegalAccessException {
         if (idColumnNames.length == 0) {
             return null;
         }
 
-        try {
-            Object[] ids = new Object[idColumnNames.length];
-            int i = 0;
-            for (FieldColumnInfo fcInfo : idFieldColumnInfos) {
-                ids[i++] = fcInfo.field.get(target);
-            }
-            return ids;
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
+        Object[] ids = new Object[idColumnNames.length];
+        int i = 0;
+        for (FieldColumnInfo fcInfo : idFieldColumnInfos) {
+            ids[i++] = fcInfo.field.get(target);
         }
+        return ids;
     }
 
 

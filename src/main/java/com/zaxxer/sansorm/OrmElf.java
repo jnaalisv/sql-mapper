@@ -19,6 +19,7 @@ package com.zaxxer.sansorm;
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,7 +41,7 @@ public final class OrmElf {
      * @return the populated object
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
+    public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
         return OrmReader.objectById(connection, clazz, args);
     }
 
@@ -67,7 +68,7 @@ public final class OrmElf {
      * @return the populated object
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
+    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, IllegalAccessException, InstantiationException, IOException {
         return OrmReader.objectFromClause(connection, clazz, clause, args);
     }
 
@@ -86,7 +87,7 @@ public final class OrmElf {
      * @return a list of populated objects
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, IllegalAccessException, InstantiationException {
+    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, IllegalAccessException, InstantiationException, IOException {
         return OrmReader.listFromClause(connection, clazz, clause, args);
     }
 
@@ -101,7 +102,7 @@ public final class OrmElf {
      * @return The result count.
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException {
+    public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException {
         return OrmReader.countObjectsFromClause(connection, clazz, clause, args);
     }
 
@@ -133,7 +134,7 @@ public final class OrmElf {
      * @return a list of instance of the target class, or an empty list
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, InstantiationException, IllegalAccessException {
+    public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, InstantiationException, IllegalAccessException, IOException {
         return OrmReader.resultSetToList(resultSet, targetClass);
     }
 
@@ -145,7 +146,7 @@ public final class OrmElf {
      * @param <T>        the class template
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws SQLException {
+    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws SQLException, IllegalAccessException, IOException, InstantiationException {
         return OrmWriter.insertListNotBatched(connection, iterable);
     }
 
@@ -157,7 +158,7 @@ public final class OrmElf {
      * @param <T>        the class template
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException {
+    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException, InstantiationException, IllegalAccessException {
         return OrmWriter.insertListBatched(connection, iterable);
     }
 
@@ -170,7 +171,7 @@ public final class OrmElf {
      * @return the same object that was passed in, but with possibly updated @Id field due to auto-generated keys
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> T insertObject(Connection connection, T target) throws SQLException {
+    public static <T> T insertObject(Connection connection, T target) throws SQLException, IllegalAccessException, IOException, InstantiationException {
         return OrmWriter.insertObject(connection, target);
     }
 
@@ -184,7 +185,7 @@ public final class OrmElf {
      * @return the same object passed in
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> T updateObject(Connection connection, T target) throws SQLException {
+    public static <T> T updateObject(Connection connection, T target) throws SQLException, IllegalAccessException, IOException, InstantiationException {
         return OrmWriter.updateObject(connection, target);
     }
 
@@ -198,11 +199,11 @@ public final class OrmElf {
      * @return 0 if no row was deleted, 1 if the row was deleted
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> int deleteObject(Connection connection, T target) throws SQLException {
+    public static <T> int deleteObject(Connection connection, T target) throws SQLException, InstantiationException, IllegalAccessException {
         return OrmWriter.deleteObject(connection, target);
     }
 
-    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException {
+    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, InstantiationException, IllegalAccessException {
         return OrmWriter.deleteObjectById(connection, clazz, args);
     }
 
