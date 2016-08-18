@@ -83,6 +83,14 @@ public class SqlService {
         );
     }
 
+    public <T> List<T> listQuery(Class<T> entityClass, String sql, Object... args) {
+        return connectPrepareExecute(
+                () -> sql,
+                resultSet -> OrmReader.resultSetToList(resultSet, entityClass),
+                args
+        );
+    }
+
     public final <T> List<T> listQuery(SqlProducer sqlProducer, Class<T> entityClass, Object... args) {
         return connectPrepareExecute(
                 sqlProducer,

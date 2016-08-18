@@ -3,7 +3,6 @@ package org.jnaalisv.sqlmapper;
 import org.jnaalisv.sqlmapper.entities.Product;
 import org.jnaalisv.sqlmapper.spring.DataSourceConfig;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
@@ -56,17 +52,9 @@ public class SqlServiceTest {
     }
 
     @Test
-    public void getObjectById() throws SQLException {
-
-        List<Product> products = sqlService.list(Product.class);
-        Product firstProductOfAllProducts = products.get(0);
-
-        Product product = sqlService.getObjectById(Product.class, firstProductOfAllProducts.getId()).get();
-
-        assertThat(product.getId()).isEqualTo(firstProductOfAllProducts.getId());
-        assertThat(product.getProductCode()).isEqualTo("A1");
-
-        assertThat(sqlService.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isEmpty();
+    public void listQuery() {
+        List<Product> products = sqlService.listQuery(Product.class, "select id, product_code from products");
+        assertThat(products.size()).isEqualTo(3);
     }
 
     @Test
@@ -81,6 +69,20 @@ public class SqlServiceTest {
         products = sqlService.listFromClause(Product.class, "product_code = ?",  "A1");
         assertThat(products.size()).isEqualTo(1);
         assertThat(products.get(0).getProductCode()).isEqualTo("A1");
+    }
+
+    @Test
+    public void getObjectById() throws SQLException {
+
+        List<Product> products = sqlService.list(Product.class);
+        Product firstProductOfAllProducts = products.get(0);
+
+        Product product = sqlService.getObjectById(Product.class, firstProductOfAllProducts.getId()).get();
+
+        assertThat(product.getId()).isEqualTo(firstProductOfAllProducts.getId());
+        assertThat(product.getProductCode()).isEqualTo("A1");
+
+        assertThat(sqlService.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
