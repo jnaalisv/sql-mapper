@@ -17,9 +17,8 @@
 package com.zaxxer.sansorm.internal;
 
 import org.jnaalisv.sqlmapper.CachingSqlStringBuilder;
-import org.jnaalisv.sqlmapper.internal.PreparedStatementConsumer;
-import org.jnaalisv.sqlmapper.internal.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.SqlExecutor;
+import org.jnaalisv.sqlmapper.internal.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
 import java.io.IOException;
@@ -44,19 +43,12 @@ public class OrmWriter {
 
         return updateObject(connection, sql, target, introspected);
     }
-
-
+    
     public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
         return SqlExecutor.prepareStatement(connection, sql, preparedStatement -> {
             PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
             return preparedStatement.executeUpdate();
         });
-    }
-
-    private static <T> T prepareStatementForInsert(Connection connection, String sql, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) throws Exception {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
-            return preparedStatementConsumer.consume(preparedStatement);
-        }
     }
 
     public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws Exception {
@@ -76,7 +68,7 @@ public class OrmWriter {
             returnColumns = introspected.getIdColumnNames();
         }
 
-        return prepareStatementForInsert(
+        return SqlExecutor.prepareStatementForInsert(
                 connection,
                 sql,
                 returnColumns,
@@ -109,7 +101,7 @@ public class OrmWriter {
             returnColumns = introspected.getIdColumnNames();
         }
 
-        return prepareStatementForInsert(
+        return SqlExecutor.prepareStatementForInsert(
                 connection,
                 sql,
                 returnColumns,
@@ -146,7 +138,7 @@ public class OrmWriter {
             returnColumns = introspected.getIdColumnNames();
         }
 
-        return prepareStatementForInsert(connection, sql, returnColumns, preparedStatement -> {
+        return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement -> {
             setParamsExecute(target, introspected, columnNames, preparedStatement);
             return target;
         });

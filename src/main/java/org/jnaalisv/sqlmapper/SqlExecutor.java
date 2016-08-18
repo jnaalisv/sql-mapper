@@ -54,6 +54,13 @@ public class SqlExecutor {
         }
     }
 
+    public static <T> T prepareStatementForInsert(Connection connection, String sql, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) throws Exception {
+        LOGGER.debug("prepareStatementForInsert "+ sql);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
+            return preparedStatementConsumer.consume(preparedStatement);
+        }
+    }
+
     public static <T> T executeStatement(PreparedStatement preparedStatement, ResultSetConsumer<T> resultSetConsumer) throws Exception {
         try (ResultSet resultSet = preparedStatement.executeQuery()) {
             return resultSetConsumer.consume(resultSet);
@@ -72,6 +79,17 @@ public class SqlExecutor {
                         stmt -> executeStatement(stmt, resultSetConsumer),
                         args
             )
+        );
+    }
+
+    public <T> T executeInsert(SqlProducer sqlProducer, String[] returnColumns, ResultSetConsumer<T> resultSetConsumer) {
+        return getConnection(
+                conn -> prepareStatementForInsert(
+                        conn,
+                        sqlProducer.produce(),
+                        returnColumns,
+                        stmt -> executeStatement(stmt, resultSetConsumer)
+                )
         );
     }
 }
