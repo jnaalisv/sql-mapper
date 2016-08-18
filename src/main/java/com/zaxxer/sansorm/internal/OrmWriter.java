@@ -26,9 +26,15 @@ import java.util.Iterator;
 
 public class OrmWriter {
 
-    private static <T> int updateObject(Connection connection, String sql, T target, Introspected introspected) throws Exception {
-        return SqlExecutor.prepareStatement(connection, sql, preparedStatement ->
-                StatementWrapper.insertOrUpdate(preparedStatement, introspected.getUpdatableColumns(), introspected, target)
+    public static <T> int insertObject(Connection connection, T target) throws Exception {
+        Class<?> clazz = target.getClass();
+
+        Introspected introspected = Introspector.getIntrospected(clazz);
+        String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
+        String[] returnColumns = introspected.getGeneratedIdColumnNames();
+
+        return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement ->
+                StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, target)
         );
     }
 
@@ -37,7 +43,9 @@ public class OrmWriter {
         Introspected introspected = Introspector.getIntrospected(clazz);
         String sql = CachingSqlStringBuilder.createStatementForUpdateSql(introspected);
 
-        return updateObject(connection, sql, target, introspected);
+        return SqlExecutor.prepareStatement(connection, sql, preparedStatement ->
+                StatementWrapper.insertOrUpdate(preparedStatement, introspected.getUpdatableColumns(), introspected, target)
+        );
     }
     
     public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
@@ -96,18 +104,6 @@ public class OrmWriter {
                     }
                     return statementWrapper.getTotalRowCount();
                 }
-        );
-    }
-
-    public static <T> int insertObject(Connection connection, T target) throws Exception {
-        Class<?> clazz = target.getClass();
-
-        Introspected introspected = Introspector.getIntrospected(clazz);
-        String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
-        String[] returnColumns = introspected.getGeneratedIdColumnNames();
-
-        return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement ->
-            StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, target)
         );
     }
 
