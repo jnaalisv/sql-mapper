@@ -1,6 +1,5 @@
 package org.jnaalisv.sqlmapper;
 
-import com.zaxxer.sansorm.SqlClosureElf;
 import org.jnaalisv.sqlmapper.entities.Product;
 import org.jnaalisv.sqlmapper.spring.DataSourceConfig;
 import org.junit.Before;
@@ -26,103 +25,103 @@ import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {DataSourceConfig.class})
 @Transactional
-public class SqlExecutorTest {
+public class OldSqlWrapperTest {
 
     private static final long PRODUCT_DOESNT_EXIST = 23423432l;
 
     @Autowired
     private TransactionAwareDataSourceProxy dataSource;
 
-    private SqlExecutor sqlExecutor;
+    private OldSqlWrapper oldSqlWrapper;
 
     @Before
     public void setDataSource() {
-        sqlExecutor = new SqlExecutor(dataSource);
+        oldSqlWrapper = new OldSqlWrapper(dataSource);
     }
 
     @Test
     public void getObjectById() throws SQLException {
 
-        List<Product> products = sqlExecutor.listFromClause(Product.class, "id > ?", 0l);
+        List<Product> products = oldSqlWrapper.listFromClause(Product.class, "id > ?", 0l);
         Product firstProductOfAllProducts = products.get(0);
 
-        Product product = sqlExecutor.getObjectById(Product.class, firstProductOfAllProducts.getId()).get();
+        Product product = oldSqlWrapper.getObjectById(Product.class, firstProductOfAllProducts.getId()).get();
 
         assertThat(product.getId()).isEqualTo(firstProductOfAllProducts.getId());
         assertThat(product.getProductCode()).isEqualTo("A1");
 
-        assertThat(sqlExecutor.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isEmpty();
+        assertThat(oldSqlWrapper.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
     public void countObjectsFromClause() throws SQLException {
-        int count = sqlExecutor.countObjectsFromClause(Product.class, "");
+        int count = oldSqlWrapper.countObjectsFromClause(Product.class, "");
         assertThat(count).isEqualTo(3);
 
-        count = sqlExecutor.countObjectsFromClause(Product.class, "id > ?", 0l);
+        count = oldSqlWrapper.countObjectsFromClause(Product.class, "id > ?", 0l);
         assertThat(count).isEqualTo(3);
 
-        count = sqlExecutor.countObjectsFromClause(Product.class, "product_code = ?", "A1");
+        count = oldSqlWrapper.countObjectsFromClause(Product.class, "product_code = ?", "A1");
         assertThat(count).isEqualTo(1);
 
-        assertThat(sqlExecutor.countObjectsFromClause(Product.class, "product_code like ?", "DOESNT EXIST!")).isEqualTo(0);
+        assertThat(oldSqlWrapper.countObjectsFromClause(Product.class, "product_code like ?", "DOESNT EXIST!")).isEqualTo(0);
     }
 
     @Test
     public void listFromClause() throws SQLException {
-        List<Product> products = sqlExecutor.listFromClause(Product.class, "id > ?", 0l);
+        List<Product> products = oldSqlWrapper.listFromClause(Product.class, "id > ?", 0l);
         assertThat(products.size()).isEqualTo(3);
 
         Product firstProductOfAllProducts = products.get(0);
 
-        products = sqlExecutor.listFromClause(Product.class, "id = ?", firstProductOfAllProducts.getId());
+        products = oldSqlWrapper.listFromClause(Product.class, "id = ?", firstProductOfAllProducts.getId());
         assertThat(products.size()).isEqualTo(1);
         assertThat(products.get(0).getId()).isEqualTo(firstProductOfAllProducts.getId());
 
-        products = sqlExecutor.listFromClause(Product.class, "product_code like ?", "%A%");
+        products = oldSqlWrapper.listFromClause(Product.class, "product_code like ?", "%A%");
         assertThat(products.size()).isEqualTo(1);
         assertThat(products.get(0).getProductCode()).isEqualTo("A1");
 
-        assertThat(sqlExecutor.listFromClause(Product.class, "product_code like ?", "DOESNT EXIST!").size()).isEqualTo(0);
+        assertThat(oldSqlWrapper.listFromClause(Product.class, "product_code like ?", "DOESNT EXIST!").size()).isEqualTo(0);
     }
 
     @Test
     public void numberFromSql() throws SQLException {
-        Number number = sqlExecutor.numberFromSql("select id from products where product_code = ?", "A1").get();
+        Number number = oldSqlWrapper.numberFromSql("select id from products where product_code = ?", "A1").get();
         assertThat(number.longValue()).isGreaterThan(0l);
     }
 
     @Test
     public void objectFromClause() {
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
         assertThat(product.getProductCode()).isEqualTo("A1");
 
-        assertThat(sqlExecutor.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isEmpty();
+        assertThat(oldSqlWrapper.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
     public void deleteObject() {
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
-        int rowCount = sqlExecutor.deleteObject(product);
+        int rowCount = oldSqlWrapper.deleteObject(product);
 
         assertThat(rowCount).isEqualTo(1);
 
-        List<Product> products = sqlExecutor.listFromClause(Product.class, "id > ?", 0l);
+        List<Product> products = oldSqlWrapper.listFromClause(Product.class, "id > ?", 0l);
         assertThat(products.size()).isEqualTo(2);
         assertThat(products.stream().map(Product::getId).collect(Collectors.toList())).doesNotContain(product.getId());
     }
 
     @Test
     public void deleteObjectById() {
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
-        int rowCount = sqlExecutor.deleteObjectById(Product.class, product.getId());
+        int rowCount = oldSqlWrapper.deleteObjectById(Product.class, product.getId());
 
         assertThat(rowCount).isEqualTo(1);
 
-        List<Product> products = sqlExecutor.listFromClause(Product.class, "id > ?", 0l);
+        List<Product> products = oldSqlWrapper.listFromClause(Product.class, "id > ?", 0l);
         assertThat(products.size()).isEqualTo(2);
 
         assertThat(products.stream().map(Product::getId).collect(Collectors.toList())).doesNotContain(product.getId());
@@ -132,7 +131,7 @@ public class SqlExecutorTest {
     public void insertObject () {
         Product transientProduct = new Product("D4");
 
-        Product persistedProduct = sqlExecutor.insertObject(transientProduct);
+        Product persistedProduct = oldSqlWrapper.insertObject(transientProduct);
 
         assertThat(persistedProduct).isNotNull();
         assertThat(persistedProduct.getId()).isGreaterThan(0l);
@@ -141,13 +140,13 @@ public class SqlExecutorTest {
 
     @Test
     public void updateObject() {
-        Product productA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product productA1 = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "A1").get();
         productA1.setProductCode("AA11");
         productA1.setIntroduced(LocalDate.now());
 
-        Product updatedProduct = sqlExecutor.updateObject(productA1);
+        Product updatedProduct = oldSqlWrapper.updateObject(productA1);
 
-        Product newlyFetchedProductA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "AA11").get();
+        Product newlyFetchedProductA1 = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "AA11").get();
 
         long originalId = productA1.getId();
 
@@ -161,12 +160,12 @@ public class SqlExecutorTest {
     @Test
     public void executeUpdate() {
 
-        Product productA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product productA1 = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "A1").get();
 
-        int rowCount = sqlExecutor.executeUpdate("update products set product_code = ? where id = ?", "AA11", productA1.getId());
+        int rowCount = oldSqlWrapper.executeUpdate("update products set product_code = ? where id = ?", "AA11", productA1.getId());
         assertThat(rowCount).isEqualTo(1);
 
-        Product newlyFetchedProductA1 = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "AA11").get();
+        Product newlyFetchedProductA1 = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "AA11").get();
 
         long originalId = productA1.getId();
 
@@ -174,7 +173,7 @@ public class SqlExecutorTest {
 
         assertThat(newlyFetchedProductA1.getProductCode()).isEqualTo("AA11");
 
-        rowCount = sqlExecutor.executeUpdate("update products set product_code = ? where id = ?", "AA11", PRODUCT_DOESNT_EXIST);
+        rowCount = oldSqlWrapper.executeUpdate("update products set product_code = ? where id = ?", "AA11", PRODUCT_DOESNT_EXIST);
         assertThat(rowCount).isEqualTo(0);
     }
 
@@ -183,7 +182,7 @@ public class SqlExecutorTest {
 
         List<Product> products = Arrays.asList(new Product("Q1"), new Product("W2"), new Product("E3"));
 
-        int[] rowCounts = sqlExecutor.insertListBatched(products);
+        int[] rowCounts = oldSqlWrapper.insertListBatched(products);
 
         assertThat(rowCounts.length).isEqualTo(3);
 
@@ -191,13 +190,13 @@ public class SqlExecutorTest {
         assertThat(rowCounts[1]).isEqualTo(1);
         assertThat(rowCounts[2]).isEqualTo(1);
 
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "Q1").get();
+        Product product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "Q1").get();
         assertThat(product.getProductCode()).isEqualTo("Q1");
 
-        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "W2").get();
+        product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "W2").get();
         assertThat(product.getProductCode()).isEqualTo("W2");
 
-        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "E3").get();
+        product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
     }
 
@@ -206,29 +205,29 @@ public class SqlExecutorTest {
 
         List<Product> products = Arrays.asList(new Product("Q1"), new Product("W2"), new Product("E3"));
 
-        int rowCount = sqlExecutor.insertListNotBatched(products);
+        int rowCount = oldSqlWrapper.insertListNotBatched(products);
 
         assertThat(rowCount).isEqualTo(3);
 
-        Product product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "Q1").get();
+        Product product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "Q1").get();
         assertThat(product.getProductCode()).isEqualTo("Q1");
 
-        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "W2").get();
+        product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "W2").get();
         assertThat(product.getProductCode()).isEqualTo("W2");
 
-        product = sqlExecutor.objectFromClause(Product.class, "product_code = ?", "E3").get();
+        product = oldSqlWrapper.objectFromClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
     }
 
     @Test
     public void executeQuery() {
-        List<Product> products = sqlExecutor.executeQuery(Product.class, "select id, product_code from products");
+        List<Product> products = oldSqlWrapper.executeQuery(Product.class, "select id, product_code from products");
         assertThat(products.size()).isEqualTo(3);
     }
 
     @Test
     public void testExceptionHandling() {
-        Throwable thrown = catchThrowable(() -> sqlExecutor.countObjectsFromClause(Product.class, "invalid"));
+        Throwable thrown = catchThrowable(() -> oldSqlWrapper.countObjectsFromClause(Product.class, "invalid"));
 
         assertThat(thrown)
                 .isInstanceOf(RuntimeException.class)

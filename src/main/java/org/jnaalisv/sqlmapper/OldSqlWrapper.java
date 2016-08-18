@@ -1,6 +1,5 @@
 package org.jnaalisv.sqlmapper;
 
-import com.zaxxer.sansorm.SqlClosure;
 import com.zaxxer.sansorm.SqlFunction;
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
@@ -11,11 +10,12 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-public class SqlExecutor {
+@Deprecated
+public class OldSqlWrapper {
 
     private final DataSource dataSource;
 
-    public SqlExecutor(final DataSource dataSource) {
+    public OldSqlWrapper(final DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
