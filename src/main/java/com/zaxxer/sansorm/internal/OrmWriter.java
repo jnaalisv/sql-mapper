@@ -31,7 +31,7 @@ public class OrmWriter {
 
     private static <T> T updateObject(Connection connection, String sql, T target, Introspected introspected) throws Exception {
         return SqlExecutor.prepareStatement(connection, sql, preparedStatement -> {
-            setParamsExecute(target, introspected, introspected.getUpdatableColumns(), preparedStatement);
+            StatementWrapper.insertOrUpdate(preparedStatement, introspected.getUpdatableColumns(), introspected, target);
             return target;
         });
     }
@@ -96,13 +96,9 @@ public class OrmWriter {
                 sql,
                 returnColumns,
                 preparedStatement -> {
-
                     StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                     for (T item : iterable) {
-                        statementWrapper.setStatementParameters(introspected.getInsertableColumns(), introspected, item);
-                        statementWrapper.executeUpdate();
-                        statementWrapper.updateGeneratedKeys(introspected, item);
-                        statementWrapper.clearParameters();
+                        statementWrapper.insertOrUpdate(introspected.getInsertableColumns(), introspected, item);
                     }
                     return statementWrapper.getTotalRowCount();
                 }
@@ -111,11 +107,9 @@ public class OrmWriter {
 
     private static <T> int setParamsExecute(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException, IOException, IllegalAccessException {
 
-        StatementWrapper statementWrapper = new StatementWrapper(stmt);
-        statementWrapper.setStatementParameters(columnNames, introspected, target);
-        statementWrapper.executeUpdate();
-        statementWrapper.updateGeneratedKeys(introspected, target);
-        return statementWrapper.getTotalRowCount();
+
+        return StatementWrapper.insertOrUpdate(stmt, columnNames, introspected, target);
+
     }
 
     public static <T> T insertObject(Connection connection, T target) throws Exception {
@@ -129,7 +123,7 @@ public class OrmWriter {
         }
 
         return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement -> {
-            setParamsExecute(target, introspected, columnNames, preparedStatement);
+            StatementWrapper.insertOrUpdate(preparedStatement, columnNames, introspected, target);
             return target;
         });
     }

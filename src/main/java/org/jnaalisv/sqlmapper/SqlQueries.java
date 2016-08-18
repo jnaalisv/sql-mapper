@@ -114,11 +114,8 @@ public class SqlQueries {
                     String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
 
                     try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
-                        StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
-                        statementWrapper.setStatementParameters(introspected.getInsertableColumns(), introspected, object);
-                        statementWrapper.executeUpdate();
-                        statementWrapper.updateGeneratedKeys(introspected, object);
-                        int rowCount = statementWrapper.getTotalRowCount();
+                        int rowCount = StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, object);
+
                         return object;
                     }
                 }

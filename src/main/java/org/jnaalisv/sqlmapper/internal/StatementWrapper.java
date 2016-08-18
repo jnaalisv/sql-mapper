@@ -11,11 +11,12 @@ public class StatementWrapper {
 
     private final PreparedStatement preparedStatement;
     private final int[] parameterTypes;
-    private int totalRowCount = 0;
+    private int totalRowCount;
 
     public StatementWrapper(PreparedStatement preparedStatement) throws SQLException {
         this.preparedStatement = preparedStatement;
         this.parameterTypes = PreparedStatementToolbox.getParameterTypes(preparedStatement);
+        this.totalRowCount = 0;
     }
 
     public <T> int setStatementParameters(String[] columnNames, Introspected introspected, T item) throws SQLException, IllegalAccessException {
@@ -59,5 +60,17 @@ public class StatementWrapper {
 
     public int getTotalRowCount() {
         return totalRowCount;
+    }
+
+    public <T> int insertOrUpdate(String[] columnNames, Introspected introspected, T target) throws SQLException, IOException, IllegalAccessException {
+        setStatementParameters(columnNames, introspected, target);
+        executeUpdate();
+        updateGeneratedKeys(introspected, target);
+        clearParameters();
+        return getTotalRowCount();
+    }
+
+    public static <T> int insertOrUpdate(PreparedStatement stmt, String[] columnNames, Introspected introspected, T target) throws SQLException, IOException, IllegalAccessException {
+        return new StatementWrapper(stmt).insertOrUpdate(columnNames, introspected, target);
     }
 }
