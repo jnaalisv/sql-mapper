@@ -1,5 +1,8 @@
 package org.jnaalisv.sqlmapper;
 
+import com.zaxxer.sansorm.internal.Introspected;
+import com.zaxxer.sansorm.internal.Introspector;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -89,5 +92,11 @@ public final class CachingSqlGenerator {
 
     public static String deleteObjectByIdSql(TableSpecs tableSpecs) {
         return SqlGenerator.deleteObjectByIdSql(tableSpecs);
+    }
+
+    public static String getObjectByIdSql(Class<?> type) throws IllegalAccessException, InstantiationException {
+        Introspected introspected = Introspector.getIntrospected(type);
+        String where = constructWhereSql(introspected.getIdColumnNames());
+        return generateSelectFromClause(introspected, where);
     }
 }
