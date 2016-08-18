@@ -19,7 +19,7 @@ public class SqlService {
         this.dataSource = dataSource;
     }
 
-    private final <T> T connectAndHandleErrors(ConnectionConsumer<T> connectionConsumer) {
+    private final <T> T getConnection(ConnectionConsumer<T> connectionConsumer) {
         try (Connection connection = FailFastResourceProxy.wrap(dataSource.getConnection(), Connection.class) ) {
             return connectionConsumer.consume(connection);
         }
@@ -35,49 +35,52 @@ public class SqlService {
         }
     }
 
-    private static <T> T prepareAndConsume(Connection connection, String sql, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
+    private static <T> T prepareStatement(Connection connection, String sql, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
         try (PreparedStatement preparedStatement = FailFastResourceProxy.wrap(connection.prepareStatement(sql), PreparedStatement.class) ) {
             PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
             return preparedStatementConsumer.consume(preparedStatement);
         }
     }
 
-    private static <T> T execute(PreparedStatement preparedStatement, ResultSetConsumer<T> resultSetConsumer) throws Exception {
+    private static <T> T executeStatement(PreparedStatement preparedStatement, ResultSetConsumer<T> resultSetConsumer) throws Exception {
         try (ResultSet resultSet = FailFastResourceProxy.wrap(preparedStatement.executeQuery(), ResultSet.class)) {
             return resultSetConsumer.consume(resultSet);
         }
     }
 
-    private <T> T connectPrepareConsume(String sql, PreparedStatementConsumer<T> statementConsumer, Object... args) {
-        return connectPrepareConsume(() -> sql, statementConsumer, args);
-    }
+    // ---------------- //
+    // Public Interface //
+    // ---------------- //
 
-    private <T> T connectPrepareConsume(SqlProducer sqlProducer, PreparedStatementConsumer<T> statementConsumer, Object... args) {
-        return connectAndHandleErrors(connection -> prepareAndConsume(connection, sqlProducer.produce(), statementConsumer, args));
+    public <T> T connectPrepareExecute(SqlProducer sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) {
+        return getConnection(
+                conn -> prepareStatement(
+                        conn,
+                        sqlProducer.produce(),
+                        stmt -> executeStatement(
+                                stmt,
+                                resultSetConsumer
+                        ),
+                        args
+                )
+        );
     }
-
 
     // -------------- //
     // Query methods  //
     // -------------- //
 
     public final <T> List<T> list(Class<T> entityClass) {
-        return connectPrepareConsume(
-                () ->CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(entityClass), null),
-                stmt -> execute(
-                        stmt,
-                        resultSet -> OrmReader.resultSetToList(resultSet, entityClass)
-                )
+        return connectPrepareExecute(
+                () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(entityClass), null),
+                resultSet -> OrmReader.resultSetToList(resultSet, entityClass)
         );
     }
 
     public final <T> List<T> listQuery(SqlProducer sqlProducer, Class<T> entityClass, Object... args) {
-        return connectPrepareConsume(
+        return connectPrepareExecute(
                 sqlProducer,
-                stmt -> execute(
-                        stmt,
-                        resultSet -> OrmReader.resultSetToList(resultSet, entityClass)
-                ),
+                resultSet -> OrmReader.resultSetToList(resultSet, entityClass),
                 args
         );
     }
@@ -86,31 +89,39 @@ public class SqlService {
         return listQuery(
                 () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(entityClass), clause),
                 entityClass,
-                args);
-    }
-
-    public final <T> Optional<T> entityQuery(String sql, Class<T> entityClass, Object... args) {
-        return entityQuery(() -> sql, entityClass, args);
+                args
+        );
     }
 
     public final <T> Optional<T> entityQuery(SqlProducer sqlProducer, Class<T> entityClass, Object... args) {
-        return connectPrepareConsume(
+        return connectPrepareExecute(
                 sqlProducer,
-                stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, entityClass)),
-                args);
+                resultSet -> OrmReader.resultSetToObject(resultSet, entityClass),
+                args
+        );
     }
 
-    public <T> Optional<T> getObjectById(Class<T> type, Object... ids) {
-        return connectPrepareConsume(
-                () -> CachingSqlGenerator.getObjectByIdSql(type),
-                stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, type)),
-                ids);
+    public <T> Optional<T> getObjectById(Class<T> entityClass, Object... ids) {
+        return connectPrepareExecute(
+                () -> CachingSqlGenerator.getObjectByIdSql(entityClass),
+                resultSet -> OrmReader.resultSetToObject(resultSet, entityClass),
+                ids
+        );
     }
 
-    public <T> Optional<T> objectFromClause(Class<T> type, String clause, Object... args) {
+    public final <T> Optional<T> entityQuery(String sql, Class<T> entityClass, Object... args) {
         return entityQuery(
-                () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(type), clause),
-                type,
-                args);
+                () -> sql,
+                entityClass,
+                args
+        );
+    }
+
+    public <T> Optional<T> objectFromClause(Class<T> entityClass, String clause, Object... args) {
+        return entityQuery(
+                () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(entityClass), clause),
+                entityClass,
+                args
+        );
     }
 }
