@@ -93,4 +93,12 @@ public class SqlServiceTest {
                 .hasMessageContaining("Syntax error in SQL statement");
     }
 
+    @Test
+    public void objectFromClause() {
+        Product product = sqlService.objectFromClause(Product.class, "product_code = ?", "A1").get();
+
+        assertThat(product.getProductCode()).isEqualTo("A1");
+
+        assertThat(sqlService.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isEmpty();
+    }
 }

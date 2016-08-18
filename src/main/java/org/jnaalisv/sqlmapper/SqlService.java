@@ -89,10 +89,15 @@ public class SqlService {
                 args);
     }
 
-    public final <T> Optional<T> entityQuery(String sql, Class<T> entityClass) {
+    public final <T> Optional<T> entityQuery(String sql, Class<T> entityClass, Object... args) {
+        return entityQuery(() -> sql, entityClass, args);
+    }
+
+    public final <T> Optional<T> entityQuery(SqlProducer sqlProducer, Class<T> entityClass, Object... args) {
         return connectPrepareConsume(
-                sql,
-                stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, entityClass)));
+                sqlProducer,
+                stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, entityClass)),
+                args);
     }
 
     public <T> Optional<T> getObjectById(Class<T> type, Object... ids) {
@@ -100,5 +105,12 @@ public class SqlService {
                 () -> CachingSqlGenerator.getObjectByIdSql(type),
                 stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, type)),
                 ids);
+    }
+
+    public <T> Optional<T> objectFromClause(Class<T> type, String clause, Object... args) {
+        return entityQuery(
+                () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(type), clause),
+                type,
+                args);
     }
 }
