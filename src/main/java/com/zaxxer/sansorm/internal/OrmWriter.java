@@ -20,6 +20,7 @@ import org.jnaalisv.sqlmapper.CachingSqlGenerator;
 import org.jnaalisv.sqlmapper.PreparedStatementConsumer;
 import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.SqlService;
+import org.jnaalisv.sqlmapper.StatementWrapper;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -81,15 +82,13 @@ public class OrmWriter {
                 sql,
                 returnColumns,
                 preparedStatement -> {
-                    int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(preparedStatement);
-
+                    StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                     for (T item : iterable) {
-                        PreparedStatementToolbox.setStatementParameters(preparedStatement, columnNames, parameterTypes, introspected, item);
-                        preparedStatement.addBatch();
-                        preparedStatement.clearParameters();
+                        statementWrapper.setStatementParameters(columnNames, introspected, item);
+                        statementWrapper.addBatch();
+                        statementWrapper.clearParameters();
                     }
-
-                    return preparedStatement.executeBatch();
+                    return statementWrapper.executeBatch();
                 }
         );
     }
@@ -116,46 +115,26 @@ public class OrmWriter {
                 sql,
                 returnColumns,
                 preparedStatement -> {
-                    int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(preparedStatement);
-                    int rowCount = 0;
+
+                    StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                     for (T item : iterable) {
-
-                        PreparedStatementToolbox.setStatementParameters(preparedStatement, columnNames, parameterTypes, introspected, item);
-                        rowCount += preparedStatement.executeUpdate();
-
-                        try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
-                            if (generatedKeys != null && generatedKeys.next()) {
-                                introspected.updateGeneratedIdValue(item, generatedKeys.getObject(1));
-                            }
-                        }
-
-                        preparedStatement.clearParameters();
+                        statementWrapper.setStatementParameters(columnNames, introspected, item);
+                        statementWrapper.executeUpdate();
+                        statementWrapper.updateGeneratedKeys(introspected, item);
+                        statementWrapper.clearParameters();
                     }
-                    return rowCount;
+                    return statementWrapper.getTotalRowCount();
                 }
         );
     }
 
     private static <T> int setParamsExecute(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException, IOException, IllegalAccessException {
-        int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
-        int parameterIndex = PreparedStatementToolbox.setStatementParameters(stmt, columnNames, parameterTypes, introspected, target);
-        // If there is still a parameter left to be set, it's the ID used for an update
-        if (parameterIndex <= parameterTypes.length) {
-            for (Object id : introspected.getActualIds(target)) {
-                stmt.setObject(parameterIndex, id, parameterTypes[parameterIndex - 1]);
-                ++parameterIndex;
-            }
-        }
-
-        int rowCount = stmt.executeUpdate();
-
-        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-            if (generatedKeys != null && generatedKeys.next()) {
-                introspected.updateGeneratedIdValue(target, generatedKeys.getObject(1));
-            }
-        }
-        return rowCount;
+        StatementWrapper statementWrapper = new StatementWrapper(stmt);
+        statementWrapper.setStatementParameters(columnNames, introspected, target);
+        statementWrapper.executeUpdate();
+        statementWrapper.updateGeneratedKeys(introspected, target);
+        return statementWrapper.getTotalRowCount();
     }
 
     public static <T> T insertObject(Connection connection, T target) throws Exception {
