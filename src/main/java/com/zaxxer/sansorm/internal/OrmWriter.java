@@ -19,20 +19,19 @@ package com.zaxxer.sansorm.internal;
 import org.jnaalisv.sqlmapper.CachingSqlGenerator;
 import org.jnaalisv.sqlmapper.PreparedStatementConsumer;
 import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
-import org.jnaalisv.sqlmapper.SqlService;
+import org.jnaalisv.sqlmapper.SqlExecutor;
 import org.jnaalisv.sqlmapper.StatementWrapper;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 
 public class OrmWriter {
 
     private static <T> T updateObject(Connection connection, String sql, T target, Introspected introspected) throws Exception {
-        return SqlService.prepareStatement(connection, sql, preparedStatement -> {
+        return SqlExecutor.prepareStatement(connection, sql, preparedStatement -> {
             setParamsExecute(target, introspected, introspected.getUpdatableColumns(), preparedStatement);
             return target;
         });
@@ -48,7 +47,7 @@ public class OrmWriter {
 
 
     public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
-        return SqlService.prepareStatement(connection, sql, preparedStatement -> {
+        return SqlExecutor.prepareStatement(connection, sql, preparedStatement -> {
             PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
             return preparedStatement.executeUpdate();
         });

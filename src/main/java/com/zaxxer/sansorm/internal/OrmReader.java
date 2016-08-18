@@ -20,7 +20,7 @@ import org.jnaalisv.sqlmapper.CachingSqlGenerator;
 import org.jnaalisv.sqlmapper.ResultSetConsumer;
 import org.jnaalisv.sqlmapper.ResultSetToolBox;
 import org.jnaalisv.sqlmapper.SqlProducer;
-import org.jnaalisv.sqlmapper.SqlService;
+import org.jnaalisv.sqlmapper.SqlExecutor;
 
 import java.sql.Connection;
 import java.util.List;
@@ -29,10 +29,10 @@ import java.util.Optional;
 public class OrmReader {
 
     private static <T> T connectPrepareExecute(Connection connection, SqlProducer sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) throws Exception {
-        return SqlService.prepareStatement(
+        return SqlExecutor.prepareStatement(
                 connection,
                 sqlProducer.produce(),
-                stmt -> SqlService.executeStatement(
+                stmt -> SqlExecutor.executeStatement(
                         stmt,
                         resultSetConsumer
                 ),
