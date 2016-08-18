@@ -17,6 +17,7 @@
 package com.zaxxer.sansorm.internal;
 
 import org.jnaalisv.sqlmapper.CachingSqlGenerator;
+import org.jnaalisv.sqlmapper.PreparedStatementConsumer;
 import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.TableSpecs;
 
@@ -29,17 +30,20 @@ import java.util.Iterator;
 
 public class OrmWriter {
 
-    public static <T> T updateObject(Connection connection, String sql, T target, Introspected introspected) throws SQLException, IllegalAccessException, InstantiationException, IOException {
-
+    private static <T> T prepareStatement(Connection connection, String sql, PreparedStatementConsumer<T> statementConsumer) throws Exception {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            setParamsExecute(target, introspected, introspected.getUpdatableColumns(), stmt);
-
-            return target;
+            return statementConsumer.consume(stmt);
         }
     }
 
-    public static <T> T updateObject(Connection connection, T target) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+    public static <T> T updateObject(Connection connection, String sql, T target, Introspected introspected) throws Exception {
+        return prepareStatement(connection, sql, preparedStatement -> {
+            setParamsExecute(target, introspected, introspected.getUpdatableColumns(), preparedStatement);
+            return target;
+        });
+    }
+
+    public static <T> T updateObject(Connection connection, T target) throws Exception {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String sql = CachingSqlGenerator.createStatementForUpdateSql(introspected);
@@ -48,14 +52,11 @@ public class OrmWriter {
     }
 
 
-    public static int executeUpdate(Connection connection, String sql, Object... args) throws SQLException {
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            PreparedStatementToolbox.populateStatementParameters(stmt, args);
-
-            return stmt.executeUpdate();
-        }
+    public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
+        return prepareStatement(connection, sql, preparedStatement -> {
+            PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
+            return preparedStatement.executeUpdate();
+        });
     }
 
     private static <T> PreparedStatement prepareStatementForInsert(Connection connection, TableSpecs tableSpecs) throws SQLException {
@@ -163,14 +164,14 @@ public class OrmWriter {
         }
     }
 
-    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, IllegalAccessException, InstantiationException {
+    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws Exception {
 
         String sql = CachingSqlGenerator.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
 
         return executeUpdate(connection, sql, args);
     }
 
-    public static <T> int deleteObject(Connection connection, T target) throws SQLException, IllegalAccessException, InstantiationException {
+    public static <T> int deleteObject(Connection connection, T target) throws Exception {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
 

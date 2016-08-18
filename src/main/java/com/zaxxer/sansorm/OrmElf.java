@@ -167,7 +167,7 @@ public final class OrmElf {
      * @return the same object passed in
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> T updateObject(Connection connection, T target) throws SQLException, IllegalAccessException, IOException, InstantiationException {
+    public static <T> T updateObject(Connection connection, T target) throws Exception {
         return OrmWriter.updateObject(connection, target);
     }
 
@@ -189,7 +189,7 @@ public final class OrmElf {
         return OrmWriter.deleteObjectById(connection, clazz, args);
     }
 
-    public static int executeUpdate(Connection connection, String sql, Object... args) throws SQLException {
+    public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
         return OrmWriter.executeUpdate(connection, sql, args);
     }
 
