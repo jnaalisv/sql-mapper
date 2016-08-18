@@ -105,9 +105,7 @@ public class OrmReader {
         return Optional.empty();
     }
 
-    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
-        String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
-
+    public static <T> Optional<T> objectFromSql(Connection connection, Class<T> clazz, String sql, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             PreparedStatementToolbox.populateStatementParameters(stmt, args);
@@ -116,6 +114,12 @@ public class OrmReader {
                 return resultSetToObject(resultSet, clazz);
             }
         }
+    }
+
+    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
+        String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
+
+        return objectFromSql(connection, clazz, sql, args);
     }
 
     public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, IllegalAccessException, InstantiationException, IOException {
