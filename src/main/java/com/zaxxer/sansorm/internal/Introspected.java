@@ -345,6 +345,14 @@ public class Introspected implements TableSpecs {
         }
     }
 
+    public String[] getGeneratedIdColumnNames() {
+        if (isGeneratedId) {
+            return idColumnNames;
+        } else {
+            return null;
+        }
+    }
+
     private static class FieldColumnInfo {
         private boolean updatable;
         private boolean insertable;

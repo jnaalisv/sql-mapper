@@ -59,14 +59,9 @@ public class OrmWriter {
 
         T target = iterableIterator.next();
 
-        Class<?> clazz = target.getClass();
-        Introspected introspected = Introspector.getIntrospected(clazz);
-        String[] columnNames = introspected.getInsertableColumns();
+        Introspected introspected = Introspector.getIntrospected(target.getClass());
         String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
-        String[] returnColumns = null;
-        if (introspected.hasGeneratedId()) {
-            returnColumns = introspected.getIdColumnNames();
-        }
+        String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
         return SqlExecutor.prepareStatementForInsert(
                 connection,
@@ -75,7 +70,7 @@ public class OrmWriter {
                 preparedStatement -> {
                     StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                     for (T item : iterable) {
-                        statementWrapper.setStatementParameters(columnNames, introspected, item);
+                        statementWrapper.setStatementParameters(introspected.getInsertableColumns(), introspected, item);
                         statementWrapper.addBatch();
                         statementWrapper.clearParameters();
                     }
@@ -92,14 +87,9 @@ public class OrmWriter {
 
         T target = iterableIterator.next();
 
-        Class<?> clazz = target.getClass();
-        Introspected introspected = Introspector.getIntrospected(clazz);
-        String[] columnNames = introspected.getInsertableColumns();
+        Introspected introspected = Introspector.getIntrospected(target.getClass());
         String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
-        String[] returnColumns = null;
-        if (introspected.hasGeneratedId()) {
-            returnColumns = introspected.getIdColumnNames();
-        }
+        String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
         return SqlExecutor.prepareStatementForInsert(
                 connection,
@@ -109,7 +99,7 @@ public class OrmWriter {
 
                     StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                     for (T item : iterable) {
-                        statementWrapper.setStatementParameters(columnNames, introspected, item);
+                        statementWrapper.setStatementParameters(introspected.getInsertableColumns(), introspected, item);
                         statementWrapper.executeUpdate();
                         statementWrapper.updateGeneratedKeys(introspected, item);
                         statementWrapper.clearParameters();

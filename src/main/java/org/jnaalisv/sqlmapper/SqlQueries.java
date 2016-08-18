@@ -109,13 +109,10 @@ public class SqlQueries {
         return sqlExecutor.getConnection(
                 connection -> {
 
-                    String[] returnColumns = null;
-                    Class<?> clazz = object.getClass();
-                    Introspected introspected = Introspector.getIntrospected(clazz);
-                    if (introspected.hasGeneratedId()) {
-                        returnColumns = introspected.getIdColumnNames();
-                    }
+                    Introspected introspected = Introspector.getIntrospected(object.getClass());
+                    String[] returnColumns = introspected.getGeneratedIdColumnNames();
                     String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
+
                     try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
                         StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                         statementWrapper.setStatementParameters(introspected.getInsertableColumns(), introspected, object);
