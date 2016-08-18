@@ -17,9 +17,9 @@
 package com.zaxxer.sansorm.internal;
 
 import org.jnaalisv.sqlmapper.CachingSqlGenerator;
+import org.jnaalisv.sqlmapper.PreparedStatementConsumer;
 import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.SqlService;
-import org.jnaalisv.sqlmapper.TableSpecs;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -53,16 +53,13 @@ public class OrmWriter {
         });
     }
 
-    private static <T> PreparedStatement prepareStatementForInsert(Connection connection, TableSpecs tableSpecs) throws SQLException {
-        String sql = CachingSqlGenerator.createStatementForInsertSql(tableSpecs);
-        if (tableSpecs.hasGeneratedId()) {
-            return connection.prepareStatement(sql, tableSpecs.getIdColumnNames());
-        } else {
-            return connection.prepareStatement(sql);
+    private static <T> T prepareStatementForInsert(Connection connection, String sql, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) throws Exception {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
+            return preparedStatementConsumer.consume(preparedStatement);
         }
     }
 
-    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException, IllegalAccessException, InstantiationException {
+    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws Exception {
         Iterator<T> iterableIterator = iterable.iterator();
         if (!iterableIterator.hasNext()) {
             return new int[]{};
@@ -73,20 +70,31 @@ public class OrmWriter {
 
         String[] columnNames = introspected.getInsertableColumns();
 
-        try (PreparedStatement stmt = prepareStatementForInsert(connection, introspected)) {
-            int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
-
-            for (T item : iterable) {
-                PreparedStatementToolbox.setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
-                stmt.addBatch();
-                stmt.clearParameters();
-            }
-
-            return stmt.executeBatch();
+        String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
+        String[] returnColumns = null;
+        if (introspected.hasGeneratedId()) {
+            returnColumns = introspected.getIdColumnNames();
         }
+
+        return prepareStatementForInsert(
+                connection,
+                sql,
+                returnColumns,
+                preparedStatement -> {
+                    int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(preparedStatement);
+
+                    for (T item : iterable) {
+                        PreparedStatementToolbox.setStatementParameters(preparedStatement, columnNames, parameterTypes, introspected, item);
+                        preparedStatement.addBatch();
+                        preparedStatement.clearParameters();
+                    }
+
+                    return preparedStatement.executeBatch();
+                }
+        );
     }
 
-    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws Exception {
         Iterator<T> iterableIterator = iterable.iterator();
         if (!iterableIterator.hasNext()) {
             return 0;
@@ -96,29 +104,40 @@ public class OrmWriter {
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
 
-        try (PreparedStatement stmt = prepareStatementForInsert(connection, introspected)) {
-            int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
-
-            int rowCount = 0;
-
-            for (T item : iterable) {
-                PreparedStatementToolbox.setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
-
-                rowCount += stmt.executeUpdate();
-
-                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                    if (generatedKeys != null) {
-                        final String idColumn = introspected.getFirstColumnNames();
-                        while (generatedKeys.next()) {
-                            introspected.set(item, idColumn, generatedKeys.getObject(1));
-                        }
-                    }
-                }
-
-                stmt.clearParameters();
-            }
-            return rowCount;
+        String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
+        String[] returnColumns = null;
+        if (introspected.hasGeneratedId()) {
+            returnColumns = introspected.getIdColumnNames();
         }
+
+
+
+        return prepareStatementForInsert(
+                connection,
+                sql,
+                returnColumns,
+                preparedStatement -> {
+                    int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(preparedStatement);
+                    int rowCount = 0;
+                    for (T item : iterable) {
+                        PreparedStatementToolbox.setStatementParameters(preparedStatement, columnNames, parameterTypes, introspected, item);
+
+                        rowCount += preparedStatement.executeUpdate();
+
+                        try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
+                            if (generatedKeys != null) {
+                                final String idColumn = introspected.getFirstColumnNames();
+                                while (generatedKeys.next()) {
+                                    introspected.set(item, idColumn, generatedKeys.getObject(1));
+                                }
+                            }
+                        }
+
+                        preparedStatement.clearParameters();
+                    }
+                    return rowCount;
+                }
+        );
     }
 
     private static <T> int setParamsExecute(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException, IOException, IllegalAccessException {
@@ -146,16 +165,20 @@ public class OrmWriter {
         return rowCount;
     }
 
-    public static <T> T insertObject(Connection connection, T target) throws SQLException, IOException, IllegalAccessException, InstantiationException {
+    public static <T> T insertObject(Connection connection, T target) throws Exception {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
-
-        try (PreparedStatement stmt = prepareStatementForInsert(connection, introspected)) {
-            setParamsExecute(target, introspected, columnNames, stmt);
-
-            return target;
+        String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
+        String[] returnColumns = null;
+        if (introspected.hasGeneratedId()) {
+            returnColumns = introspected.getIdColumnNames();
         }
+
+        return prepareStatementForInsert(connection, sql, returnColumns, preparedStatement -> {
+            setParamsExecute(target, introspected, columnNames, preparedStatement);
+            return target;
+        });
     }
 
     public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws Exception {

@@ -128,7 +128,7 @@ public final class OrmElf {
      * @param <T>        the class template
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws SQLException, IllegalAccessException, IOException, InstantiationException {
+    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws Exception {
         return OrmWriter.insertListNotBatched(connection, iterable);
     }
 
@@ -153,7 +153,7 @@ public final class OrmElf {
      * @return the same object that was passed in, but with possibly updated @Id field due to auto-generated keys
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> T insertObject(Connection connection, T target) throws SQLException, IllegalAccessException, IOException, InstantiationException {
+    public static <T> T insertObject(Connection connection, T target) throws Exception {
         return OrmWriter.insertObject(connection, target);
     }
 
