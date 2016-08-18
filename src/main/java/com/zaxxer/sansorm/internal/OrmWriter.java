@@ -21,10 +21,7 @@ import org.jnaalisv.sqlmapper.SqlExecutor;
 import org.jnaalisv.sqlmapper.internal.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Iterator;
 
 public class OrmWriter {
@@ -105,25 +102,15 @@ public class OrmWriter {
         );
     }
 
-    private static <T> int setParamsExecute(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException, IOException, IllegalAccessException {
-
-
-        return StatementWrapper.insertOrUpdate(stmt, columnNames, introspected, target);
-
-    }
-
     public static <T> T insertObject(Connection connection, T target) throws Exception {
         Class<?> clazz = target.getClass();
+
         Introspected introspected = Introspector.getIntrospected(clazz);
-        String[] columnNames = introspected.getInsertableColumns();
         String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
-        String[] returnColumns = null;
-        if (introspected.hasGeneratedId()) {
-            returnColumns = introspected.getIdColumnNames();
-        }
+        String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
         return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement -> {
-            StatementWrapper.insertOrUpdate(preparedStatement, columnNames, introspected, target);
+            StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, target);
             return target;
         });
     }
