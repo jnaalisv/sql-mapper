@@ -1,4 +1,4 @@
-package org.jnaalisv.sqlmapper;
+package org.jnaalisv.sqlmapper.internal;
 
 import java.sql.PreparedStatement;
 

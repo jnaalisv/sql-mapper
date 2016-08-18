@@ -2,13 +2,14 @@ package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.internal.Introspected;
 import com.zaxxer.sansorm.internal.Introspector;
+import org.jnaalisv.sqlmapper.internal.TableSpecs;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class CachingSqlGenerator {
+public final class CachingSqlStringBuilder {
     private static final int CACHE_SIZE = Integer.getInteger("org.jnaalisv.sqlmapper.statementCacheSize", 500);
 
     private static Map<String, String> csvCache = new ConcurrentHashMap<>();
@@ -41,13 +42,13 @@ public final class CachingSqlGenerator {
     });
 
 
-    private CachingSqlGenerator() {}
+    private CachingSqlStringBuilder() {}
 
     public static <T> String getColumnsCsv(TableSpecs tableSpecs, String... tablePrefix) {
         String cacheKey = (tablePrefix == null || tablePrefix.length == 0 ? tableSpecs.getTableName() : tablePrefix[0] + tableSpecs.getTableName());
         String columnCsv = csvCache.get(cacheKey);
         if (columnCsv == null) {
-            columnCsv = SqlGenerator.getColumnsCsv(tableSpecs, tablePrefix);
+            columnCsv = SqlStringBuilder.getColumnsCsv(tableSpecs, tablePrefix);
             csvCache.put(cacheKey, columnCsv);
         }
 
@@ -58,24 +59,24 @@ public final class CachingSqlGenerator {
         String cacheKey = tableSpecs.getTableName() + clause;
         String sql = fromClauseStmtCache.get(cacheKey);
         if (sql == null) {
-            sql = SqlGenerator.generateSelectFromClause(tableSpecs, clause);
+            sql = SqlStringBuilder.generateSelectFromClause(tableSpecs, clause);
             fromClauseStmtCache.put(cacheKey, sql);
         }
         return sql;
     }
 
     public static String countObjectsFromClause(TableSpecs tableSpecs, String clause) {
-        return SqlGenerator.countObjectsFromClause(tableSpecs, clause);
+        return SqlStringBuilder.countObjectsFromClause(tableSpecs, clause);
     }
 
     public static String constructWhereSql(String[] idColumnNames) {
-        return SqlGenerator.constructWhereSql(idColumnNames);
+        return SqlStringBuilder.constructWhereSql(idColumnNames);
     }
 
     public static String createStatementForUpdateSql(TableSpecs tableSpecs) {
         String sql = updateStatementCache.get(tableSpecs.getTableName());
         if (sql == null) {
-            sql = SqlGenerator.createStatementForUpdateSql(tableSpecs);
+            sql = SqlStringBuilder.createStatementForUpdateSql(tableSpecs);
             updateStatementCache.put(tableSpecs.getTableName(), sql);
         }
         return sql;
@@ -84,14 +85,14 @@ public final class CachingSqlGenerator {
     public static String createStatementForInsertSql(TableSpecs tableSpecs) {
         String sql = createStatementCache.get(tableSpecs.getTableName());
         if (sql == null) {
-            sql = SqlGenerator.createStatementForInsertSql(tableSpecs);
+            sql = SqlStringBuilder.createStatementForInsertSql(tableSpecs);
             createStatementCache.put(tableSpecs.getTableName(), sql);
         }
         return sql;
     }
 
     public static String deleteObjectByIdSql(TableSpecs tableSpecs) {
-        return SqlGenerator.deleteObjectByIdSql(tableSpecs);
+        return SqlStringBuilder.deleteObjectByIdSql(tableSpecs);
     }
 
     public static String getObjectByIdSql(Class<?> type) throws IllegalAccessException, InstantiationException {

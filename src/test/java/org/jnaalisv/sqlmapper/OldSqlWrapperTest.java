@@ -1,6 +1,7 @@
 package org.jnaalisv.sqlmapper;
 
 import org.jnaalisv.sqlmapper.entities.Product;
+import org.jnaalisv.sqlmapper.internal.OldSqlWrapper;
 import org.jnaalisv.sqlmapper.spring.DataSourceConfig;
 import org.junit.Before;
 import org.junit.Test;

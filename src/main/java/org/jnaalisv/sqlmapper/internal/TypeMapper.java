@@ -1,4 +1,4 @@
-package org.jnaalisv.sqlmapper;
+package org.jnaalisv.sqlmapper.internal;
 
 import java.io.IOException;
 import java.io.Reader;

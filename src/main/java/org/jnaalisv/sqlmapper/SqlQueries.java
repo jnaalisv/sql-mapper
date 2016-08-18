@@ -1,6 +1,8 @@
 package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.internal.Introspector;
+import org.jnaalisv.sqlmapper.internal.ResultSetToolBox;
+import org.jnaalisv.sqlmapper.internal.SqlProducer;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +17,7 @@ public class SqlQueries {
 
     public final <T> List<T> list(Class<T> entityClass) {
         return sqlExecutor.execute(
-                () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(entityClass), null),
+                () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), null),
                 resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass)
         );
     }
@@ -38,7 +40,7 @@ public class SqlQueries {
 
     public <T> List<T> listFromClause(Class<T> entityClass, String clause, Object... args) {
         return queryForList(
-                () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(entityClass), clause),
+                () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), clause),
                 entityClass,
                 args
         );
@@ -54,7 +56,7 @@ public class SqlQueries {
 
     public <T> Optional<T> getObjectById(Class<T> entityClass, Object... ids) {
         return sqlExecutor.execute(
-                () -> CachingSqlGenerator.getObjectByIdSql(entityClass),
+                () -> CachingSqlStringBuilder.getObjectByIdSql(entityClass),
                 resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
                 ids
         );
@@ -70,7 +72,7 @@ public class SqlQueries {
 
     public <T> Optional<T> objectFromClause(Class<T> entityClass, String clause, Object... args) {
         return query(
-                () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(entityClass), clause),
+                () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), clause),
                 entityClass,
                 args
         );
@@ -92,7 +94,7 @@ public class SqlQueries {
     public <T> int countObjectsFromClause(Class<T> clazz, String clause, Object... args) {
         Optional<Number> maybeNumber =
                 numberFromSql(
-                        () -> CachingSqlGenerator.countObjectsFromClause(Introspector.getIntrospected(clazz), clause),
+                        () -> CachingSqlStringBuilder.countObjectsFromClause(Introspector.getIntrospected(clazz), clause),
                         args);
 
         return maybeNumber

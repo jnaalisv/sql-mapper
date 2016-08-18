@@ -1,12 +1,14 @@
 package org.jnaalisv.sqlmapper;
 
+import org.jnaalisv.sqlmapper.internal.TableSpecs;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public final class SqlGenerator {
+public final class SqlStringBuilder {
 
-    private SqlGenerator() {}
+    private SqlStringBuilder() {}
 
     public static <T> String getColumnsCsv(TableSpecs tableSpecs, String... tablePrefix) {
         StringBuilder sb = new StringBuilder();

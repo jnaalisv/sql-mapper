@@ -16,7 +16,7 @@
 
 package com.zaxxer.sansorm;
 
-import org.jnaalisv.sqlmapper.FailFastResourceProxy;
+import org.jnaalisv.sqlmapper.internal.FailFastResourceProxy;
 
 import javax.sql.DataSource;
 import java.sql.Connection;

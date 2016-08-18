@@ -16,8 +16,8 @@
 
 package com.zaxxer.sansorm.internal;
 
-import org.jnaalisv.sqlmapper.TableSpecs;
-import org.jnaalisv.sqlmapper.TypeMapper;
+import org.jnaalisv.sqlmapper.internal.TableSpecs;
+import org.jnaalisv.sqlmapper.internal.TypeMapper;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.AttributeConverter;

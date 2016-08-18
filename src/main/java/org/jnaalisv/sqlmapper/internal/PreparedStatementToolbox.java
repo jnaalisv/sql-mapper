@@ -1,6 +1,7 @@
-package org.jnaalisv.sqlmapper;
+package org.jnaalisv.sqlmapper.internal;
 
 import com.zaxxer.sansorm.internal.Introspected;
+import org.jnaalisv.sqlmapper.internal.TypeMapper;
 
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;

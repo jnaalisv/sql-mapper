@@ -1,5 +1,11 @@
 package org.jnaalisv.sqlmapper;
 
+import org.jnaalisv.sqlmapper.internal.ConnectionConsumer;
+import org.jnaalisv.sqlmapper.internal.FailFastResourceProxy;
+import org.jnaalisv.sqlmapper.internal.PreparedStatementConsumer;
+import org.jnaalisv.sqlmapper.internal.PreparedStatementToolbox;
+import org.jnaalisv.sqlmapper.internal.ResultSetConsumer;
+import org.jnaalisv.sqlmapper.internal.SqlProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

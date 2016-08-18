@@ -2,12 +2,13 @@ package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.internal.Introspector;
 import org.jnaalisv.sqlmapper.entities.Product;
+import org.jnaalisv.sqlmapper.internal.TableSpecs;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SqlGeneratorTest {
+public class SqlStringBuilderTest {
 
     private TableSpecs tableSpecs;
 
@@ -18,13 +19,13 @@ public class SqlGeneratorTest {
 
     @Test
     public void constructWhereSql() {
-        String sql = SqlGenerator.constructWhereSql(tableSpecs.getIdColumnNames());
+        String sql = SqlStringBuilder.constructWhereSql(tableSpecs.getIdColumnNames());
         assertThat(sql).isEqualTo("id=?");
     }
 
     @Test
     public void countObjectsFromClause() {
-        String sql = SqlGenerator.countObjectsFromClause(tableSpecs, "id=?");
+        String sql = SqlStringBuilder.countObjectsFromClause(tableSpecs, "id=?");
         assertThat(sql).isEqualTo("SELECT COUNT(products.id) " +
                 "FROM products products " +
                 "WHERE  id=?");
@@ -32,7 +33,7 @@ public class SqlGeneratorTest {
 
     @Test
     public void generateSelectFromClause() {
-        String sql = SqlGenerator.generateSelectFromClause(tableSpecs, "id=?");
+        String sql = SqlStringBuilder.generateSelectFromClause(tableSpecs, "id=?");
         assertThat(sql).isEqualTo("SELECT products.id," +
                 "products.product_type," +
                 "products.product_code," +
@@ -46,7 +47,7 @@ public class SqlGeneratorTest {
 
     @Test
     public void getColumnsCsv() {
-        String sql = SqlGenerator.getColumnsCsv(tableSpecs, tableSpecs.getTableName());
+        String sql = SqlStringBuilder.getColumnsCsv(tableSpecs, tableSpecs.getTableName());
         assertThat(sql).isEqualTo("products.id," +
                 "products.product_type," +
                 "products.product_code," +

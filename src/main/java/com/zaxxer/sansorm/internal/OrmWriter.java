@@ -16,11 +16,11 @@
 
 package com.zaxxer.sansorm.internal;
 
-import org.jnaalisv.sqlmapper.CachingSqlGenerator;
-import org.jnaalisv.sqlmapper.PreparedStatementConsumer;
-import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
+import org.jnaalisv.sqlmapper.CachingSqlStringBuilder;
+import org.jnaalisv.sqlmapper.internal.PreparedStatementConsumer;
+import org.jnaalisv.sqlmapper.internal.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.SqlExecutor;
-import org.jnaalisv.sqlmapper.StatementWrapper;
+import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -40,7 +40,7 @@ public class OrmWriter {
     public static <T> T updateObject(Connection connection, T target) throws Exception {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
-        String sql = CachingSqlGenerator.createStatementForUpdateSql(introspected);
+        String sql = CachingSqlStringBuilder.createStatementForUpdateSql(introspected);
 
         return updateObject(connection, sql, target, introspected);
     }
@@ -70,7 +70,7 @@ public class OrmWriter {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
-        String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
+        String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
         String[] returnColumns = null;
         if (introspected.hasGeneratedId()) {
             returnColumns = introspected.getIdColumnNames();
@@ -103,7 +103,7 @@ public class OrmWriter {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
-        String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
+        String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
         String[] returnColumns = null;
         if (introspected.hasGeneratedId()) {
             returnColumns = introspected.getIdColumnNames();
@@ -140,7 +140,7 @@ public class OrmWriter {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
-        String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
+        String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
         String[] returnColumns = null;
         if (introspected.hasGeneratedId()) {
             returnColumns = introspected.getIdColumnNames();
@@ -154,7 +154,7 @@ public class OrmWriter {
 
     public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws Exception {
 
-        String sql = CachingSqlGenerator.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
+        String sql = CachingSqlStringBuilder.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
 
         return executeUpdate(connection, sql, args);
     }
