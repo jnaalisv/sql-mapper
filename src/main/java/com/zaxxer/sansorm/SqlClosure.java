@@ -16,7 +16,7 @@
 
 package com.zaxxer.sansorm;
 
-import org.jnaalisv.sqlmapper.FailFastOnResourceLeakConnectionProxy;
+import org.jnaalisv.sqlmapper.FailFastResourceProxy;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -49,7 +49,7 @@ public abstract class SqlClosure<T> {
 
     public final T execute() {
 
-        try (Connection connection = FailFastOnResourceLeakConnectionProxy.wrapConnection(dataSource.getConnection())) {
+        try (Connection connection = FailFastResourceProxy.wrapConnection(dataSource.getConnection())) {
             return execute(connection);
         }
 

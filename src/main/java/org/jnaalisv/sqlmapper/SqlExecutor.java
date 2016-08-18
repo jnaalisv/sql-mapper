@@ -60,7 +60,7 @@ public class SqlExecutor {
     }
 
     public final <T> T execute(SqlFunction<T> sqlFunction) {
-        try (Connection connection = FailFastOnResourceLeakConnectionProxy.wrapConnection(dataSource.getConnection()) ) {
+        try (Connection connection = FailFastResourceProxy.wrapConnection(dataSource.getConnection()) ) {
             return sqlFunction.execute(connection);
         }
 
