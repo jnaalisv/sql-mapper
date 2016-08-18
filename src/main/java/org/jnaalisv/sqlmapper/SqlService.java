@@ -12,13 +12,11 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.zaxxer.sansorm.internal.OrmReader.statementToObject;
-
-public class NewSql {
+public class SqlService {
 
     private final DataSource dataSource;
 
-    public NewSql(final DataSource dataSource) {
+    public SqlService(final DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -62,8 +60,8 @@ public class NewSql {
         return connectPrepareConsume(sql, stmt -> execute(stmt, resultSet -> OrmReader.resultSetToList(resultSet, entityClass)));
     }
 
-    public final <T> T entityQuery(String sql, Class<T> entityClass) {
-        return connectPrepareConsume(sql, stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, (T) entityClass.newInstance())));
+    public final <T> Optional<T> entityQuery(String sql, Class<T> entityClass) {
+        return connectPrepareConsume(sql, stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, entityClass)));
     }
 
     public <T> Optional<T> getObjectById(Class<T> type, Object... ids) {
@@ -71,7 +69,6 @@ public class NewSql {
             Introspected introspected = Introspector.getIntrospected(type);
             String where = CachingSqlGenerator.constructWhereSql(introspected.getIdColumnNames());
             return CachingSqlGenerator.generateSelectFromClause(introspected, where);
-
-        }, stmt -> execute(stmt, resultSet -> OrmReader.statementToObject(stmt, type, ids)));
+        }, stmt -> execute(stmt, resultSet -> OrmReader.resultSetToObject(resultSet, type)));
     }
 }
