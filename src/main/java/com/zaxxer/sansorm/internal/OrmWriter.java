@@ -67,9 +67,7 @@ public class OrmWriter {
 
         Class<?> clazz = iterableIterator.next().getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
-
         String[] columnNames = introspected.getInsertableColumns();
-
         String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
         String[] returnColumns = null;
         if (introspected.hasGeneratedId()) {
@@ -103,14 +101,11 @@ public class OrmWriter {
         Class<?> clazz = iterableIterator.next().getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
-
         String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
         String[] returnColumns = null;
         if (introspected.hasGeneratedId()) {
             returnColumns = introspected.getIdColumnNames();
         }
-
-
 
         return prepareStatementForInsert(
                 connection,
