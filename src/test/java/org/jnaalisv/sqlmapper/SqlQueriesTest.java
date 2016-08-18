@@ -117,4 +117,15 @@ public class SqlQueriesTest {
 
         assertThat(sqlQueries.countObjectsFromClause(Product.class, "product_code like ?", "DOESNT EXIST!")).isEqualTo(0);
     }
+
+    @Test
+    public void insertObject () {
+        Product transientProduct = new Product("D4");
+
+        Product persistedProduct = sqlQueries.insertObject(transientProduct);
+
+        assertThat(persistedProduct).isNotNull();
+        assertThat(persistedProduct.getId()).isGreaterThan(0l);
+        assertThat(persistedProduct.getProductCode()).isEqualTo("D4");
+    }
 }

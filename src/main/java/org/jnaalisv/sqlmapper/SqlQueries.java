@@ -1,9 +1,12 @@
 package org.jnaalisv.sqlmapper;
 
+import com.zaxxer.sansorm.internal.Introspected;
 import com.zaxxer.sansorm.internal.Introspector;
 import org.jnaalisv.sqlmapper.internal.ResultSetToolBox;
 import org.jnaalisv.sqlmapper.internal.SqlProducer;
+import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
+import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Optional;
 
@@ -100,5 +103,28 @@ public class SqlQueries {
         return maybeNumber
                 .orElseThrow(() -> new RuntimeException("count query returned without results"))
                 .intValue();
+    }
+
+    public <T> T insertObject(T object) {
+        return sqlExecutor.getConnection(
+                connection -> {
+
+                    String[] returnColumns = null;
+                    Class<?> clazz = object.getClass();
+                    Introspected introspected = Introspector.getIntrospected(clazz);
+                    if (introspected.hasGeneratedId()) {
+                        returnColumns = introspected.getIdColumnNames();
+                    }
+                    String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
+                        StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
+                        statementWrapper.setStatementParameters(introspected.getInsertableColumns(), introspected, object);
+                        statementWrapper.executeUpdate();
+                        statementWrapper.updateGeneratedKeys(introspected, object);
+                        int rowCount = statementWrapper.getTotalRowCount();
+                        return object;
+                    }
+                }
+        );
     }
 }

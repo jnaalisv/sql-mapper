@@ -24,7 +24,7 @@ public class SqlExecutor {
         this.dataSource = dataSource;
     }
 
-    private final <T> T getConnection(ConnectionConsumer<T> connectionConsumer) {
+    public final <T> T getConnection(ConnectionConsumer<T> connectionConsumer) {
         LOGGER.debug("getConnection");
         try (Connection connection = FailFastResourceProxy.wrap(dataSource.getConnection(), Connection.class) ) {
             return connectionConsumer.consume(connection);
@@ -82,13 +82,13 @@ public class SqlExecutor {
         );
     }
 
-    public <T> T executeInsert(SqlProducer sqlProducer, String[] returnColumns, ResultSetConsumer<T> resultSetConsumer) {
+    public <T> T executeInsert(SqlProducer sqlProducer, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) {
         return getConnection(
                 conn -> prepareStatementForInsert(
                         conn,
                         sqlProducer.produce(),
                         returnColumns,
-                        stmt -> executeStatement(stmt, resultSetConsumer)
+                        preparedStatementConsumer
                 )
         );
     }
