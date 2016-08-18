@@ -129,11 +129,11 @@ public class SqlClosureElfTest {
     public void insertObject () {
         Product transientProduct = new Product("D4");
 
-        Product persistedProduct = SqlClosureElf.insertObject(transientProduct);
+        int rowCount = SqlClosureElf.insertObject(transientProduct);
 
-        assertThat(persistedProduct).isNotNull();
-        assertThat(persistedProduct.getId()).isGreaterThan(0l);
-        assertThat(persistedProduct.getProductCode()).isEqualTo("D4");
+        assertThat(rowCount).isEqualTo(1);
+        assertThat(transientProduct.getId()).isGreaterThan(0l);
+        assertThat(transientProduct.getProductCode()).isEqualTo("D4");
     }
 
     @Test
@@ -141,17 +141,15 @@ public class SqlClosureElfTest {
         Product productA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "A1").get();
         productA1.setProductCode("AA11");
         productA1.setIntroduced(LocalDate.now());
+        long originalId = productA1.getId();
 
-        Product updatedProduct = SqlClosureElf.updateObject(productA1);
+        int rowCount = SqlClosureElf.updateObject(productA1);
+        assertThat(rowCount).isEqualTo(1);
 
         Product newlyFetchedProductA1 = SqlClosureElf.objectFromClause(Product.class, "product_code = ?", "AA11").get();
 
-        long originalId = productA1.getId();
-
-        assertThat(updatedProduct.getId()).isEqualTo(originalId);
+        assertThat(productA1.getId()).isEqualTo(originalId);
         assertThat(newlyFetchedProductA1.getId()).isEqualTo(originalId);
-
-        assertThat(updatedProduct.getProductCode()).isEqualTo("AA11");
         assertThat(newlyFetchedProductA1.getProductCode()).isEqualTo("AA11");
     }
 

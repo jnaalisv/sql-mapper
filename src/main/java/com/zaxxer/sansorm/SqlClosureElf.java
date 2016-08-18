@@ -56,7 +56,7 @@ public final class SqlClosureElf {
      * @param <T>    The type of the object.
      * @return The inserted object populated with any generated IDs.
      */
-    public static <T> T insertObject(T object) {
+    public static <T> int insertObject(T object) {
         return SqlClosure.execute(c -> OrmElf.insertObject(c, object));
     }
 
@@ -75,7 +75,7 @@ public final class SqlClosureElf {
      * @param <T>    The type of the object.
      * @return The updated object.
      */
-    public static <T> T updateObject(T object) {
+    public static <T> int updateObject(T object) {
         return SqlClosure.execute(c -> OrmElf.updateObject(c, object));
     }
 

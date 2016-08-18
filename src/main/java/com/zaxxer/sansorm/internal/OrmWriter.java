@@ -26,14 +26,13 @@ import java.util.Iterator;
 
 public class OrmWriter {
 
-    private static <T> T updateObject(Connection connection, String sql, T target, Introspected introspected) throws Exception {
-        return SqlExecutor.prepareStatement(connection, sql, preparedStatement -> {
-            StatementWrapper.insertOrUpdate(preparedStatement, introspected.getUpdatableColumns(), introspected, target);
-            return target;
-        });
+    private static <T> int updateObject(Connection connection, String sql, T target, Introspected introspected) throws Exception {
+        return SqlExecutor.prepareStatement(connection, sql, preparedStatement ->
+                StatementWrapper.insertOrUpdate(preparedStatement, introspected.getUpdatableColumns(), introspected, target)
+        );
     }
 
-    public static <T> T updateObject(Connection connection, T target) throws Exception {
+    public static <T> int updateObject(Connection connection, T target) throws Exception {
         Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String sql = CachingSqlStringBuilder.createStatementForUpdateSql(introspected);
@@ -67,9 +66,7 @@ public class OrmWriter {
                 preparedStatement -> {
                     StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                     for (T item : iterable) {
-                        statementWrapper.setStatementParameters(introspected.getInsertableColumns(), introspected, item);
-                        statementWrapper.addBatch();
-                        statementWrapper.clearParameters();
+                        statementWrapper.addBatch(introspected.getInsertableColumns(), introspected, item);
                     }
                     return statementWrapper.executeBatch();
                 }
@@ -102,17 +99,16 @@ public class OrmWriter {
         );
     }
 
-    public static <T> T insertObject(Connection connection, T target) throws Exception {
+    public static <T> int insertObject(Connection connection, T target) throws Exception {
         Class<?> clazz = target.getClass();
 
         Introspected introspected = Introspector.getIntrospected(clazz);
         String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
         String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
-        return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement -> {
-            StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, target);
-            return target;
-        });
+        return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement ->
+            StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, target)
+        );
     }
 
     public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws Exception {

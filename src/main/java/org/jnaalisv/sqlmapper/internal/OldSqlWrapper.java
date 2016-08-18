@@ -27,11 +27,11 @@ public class OldSqlWrapper {
         return execute(connection -> OrmReader.objectFromClause(connection, type, clause, args));
     }
 
-    public <T> T insertObject(T object) {
+    public <T> int insertObject(T object) {
         return execute(connection -> OrmWriter.insertObject(connection, object));
     }
 
-    public <T> T updateObject(T object) {
+    public <T> int updateObject(T object) {
         return execute(connection -> OrmWriter.updateObject(connection, object));
     }
 

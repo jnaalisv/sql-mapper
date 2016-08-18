@@ -73,4 +73,10 @@ public class StatementWrapper {
     public static <T> int insertOrUpdate(PreparedStatement stmt, String[] columnNames, Introspected introspected, T target) throws SQLException, IOException, IllegalAccessException {
         return new StatementWrapper(stmt).insertOrUpdate(columnNames, introspected, target);
     }
+
+    public <T> void addBatch(String[] insertableColumns, Introspected introspected, T item) throws SQLException, IllegalAccessException {
+        setStatementParameters(introspected.getInsertableColumns(), introspected, item);
+        addBatch();
+        clearParameters();
+    }
 }

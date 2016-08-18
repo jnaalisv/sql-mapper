@@ -153,7 +153,7 @@ public final class OrmElf {
      * @return the same object that was passed in, but with possibly updated @Id field due to auto-generated keys
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> T insertObject(Connection connection, T target) throws Exception {
+    public static <T> int insertObject(Connection connection, T target) throws Exception {
         return OrmWriter.insertObject(connection, target);
     }
 
@@ -164,10 +164,10 @@ public final class OrmElf {
      * @param connection a SQL connection
      * @param target     the annotated object to use to update a row in the database
      * @param <T>        the class template
-     * @return the same object passed in
+     * @return row count
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> T updateObject(Connection connection, T target) throws Exception {
+    public static <T> int updateObject(Connection connection, T target) throws Exception {
         return OrmWriter.updateObject(connection, target);
     }
 
