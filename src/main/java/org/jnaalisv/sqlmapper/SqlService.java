@@ -138,4 +138,28 @@ public class SqlService {
                 args
         );
     }
+
+    public Optional<Number> numberFromSql(SqlProducer sqlProducer, Object... args) {
+        return connectPrepareExecute(
+                sqlProducer,
+                resultSet -> {
+                    if (resultSet.next()) {
+                        return Optional.of( (Number) resultSet.getObject(1));
+                    }
+                    return Optional.empty();
+                },
+                args
+        );
+    }
+
+    public <T> int countObjectsFromClause(Class<T> clazz, String clause, Object... args) {
+        Optional<Number> maybeNumber =
+                numberFromSql(
+                    () -> CachingSqlGenerator.countObjectsFromClause(Introspector.getIntrospected(clazz), clause),
+                    args);
+
+        return maybeNumber
+                .orElseThrow(() -> new RuntimeException("count query returned without results"))
+                .intValue();
+    }
 }

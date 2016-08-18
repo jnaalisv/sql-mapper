@@ -103,4 +103,18 @@ public class SqlServiceTest {
 
         assertThat(sqlService.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isEmpty();
     }
+
+    @Test
+    public void countObjectsFromClause() throws SQLException {
+        int count = sqlService.countObjectsFromClause(Product.class, "");
+        assertThat(count).isEqualTo(3);
+
+        count = sqlService.countObjectsFromClause(Product.class, "id > ?", 0l);
+        assertThat(count).isEqualTo(3);
+
+        count = sqlService.countObjectsFromClause(Product.class, "product_code = ?", "A1");
+        assertThat(count).isEqualTo(1);
+
+        assertThat(sqlService.countObjectsFromClause(Product.class, "product_code like ?", "DOESNT EXIST!")).isEqualTo(0);
+    }
 }
