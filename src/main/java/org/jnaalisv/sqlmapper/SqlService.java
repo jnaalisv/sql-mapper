@@ -1,7 +1,6 @@
 package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.internal.Introspector;
-import com.zaxxer.sansorm.internal.OrmReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,14 +78,14 @@ public class SqlService {
     public final <T> List<T> list(Class<T> entityClass) {
         return connectPrepareExecute(
                 () -> CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(entityClass), null),
-                resultSet -> OrmReader.resultSetToList(resultSet, entityClass)
+                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass)
         );
     }
 
     public <T> List<T> listQuery(Class<T> entityClass, String sql, Object... args) {
         return connectPrepareExecute(
                 () -> sql,
-                resultSet -> OrmReader.resultSetToList(resultSet, entityClass),
+                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
                 args
         );
     }
@@ -94,7 +93,7 @@ public class SqlService {
     public final <T> List<T> listQuery(SqlProducer sqlProducer, Class<T> entityClass, Object... args) {
         return connectPrepareExecute(
                 sqlProducer,
-                resultSet -> OrmReader.resultSetToList(resultSet, entityClass),
+                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
                 args
         );
     }
@@ -110,7 +109,7 @@ public class SqlService {
     public final <T> Optional<T> entityQuery(SqlProducer sqlProducer, Class<T> entityClass, Object... args) {
         return connectPrepareExecute(
                 sqlProducer,
-                resultSet -> OrmReader.resultSetToObject(resultSet, entityClass),
+                resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
                 args
         );
     }
@@ -118,7 +117,7 @@ public class SqlService {
     public <T> Optional<T> getObjectById(Class<T> entityClass, Object... ids) {
         return connectPrepareExecute(
                 () -> CachingSqlGenerator.getObjectByIdSql(entityClass),
-                resultSet -> OrmReader.resultSetToObject(resultSet, entityClass),
+                resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
                 ids
         );
     }

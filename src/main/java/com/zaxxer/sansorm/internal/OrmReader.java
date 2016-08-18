@@ -18,62 +18,17 @@ package com.zaxxer.sansorm.internal;
 
 import org.jnaalisv.sqlmapper.CachingSqlGenerator;
 import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
+import org.jnaalisv.sqlmapper.ResultSetToolBox;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public class OrmReader {
-
-    private static class ResultSetColumnInfo {
-        public final int columnCount;
-        public final String[] columnNames;
-        public ResultSetColumnInfo(ResultSetMetaData metaData) throws SQLException {
-            columnCount = metaData.getColumnCount();
-            columnNames = new String[columnCount];
-            for (int column = columnCount; column > 0; column--) {
-                columnNames[column - 1] = metaData.getColumnName(column).toLowerCase();
-            }
-        }
-    }
-
-    private static <T> void hydrateEntity(Introspected introspected, T target, ResultSet resultSet, ResultSetColumnInfo resultSetColumnInfo, Set<String> ignoredColumns) throws IllegalAccessException, SQLException, IOException {
-
-        for (int column = resultSetColumnInfo.columnCount; column > 0; column--) {
-            Object columnValue = resultSet.getObject(column);
-            String columnName = resultSetColumnInfo.columnNames[column - 1];
-
-            if (columnValue == null || ignoredColumns.contains(columnName)) {
-                continue;
-            }
-
-            introspected.set(target, columnName, columnValue);
-        }
-    }
-
-    public static <T> List<T> resultSetToList(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
-
-        ResultSetColumnInfo resultSetColumnInfo = new ResultSetColumnInfo(resultSet.getMetaData());
-        Introspected introspected = Introspector.getIntrospected(targetClass);
-
-        final List<T> list = new ArrayList<>();
-        while (resultSet.next()) {
-
-            T target = targetClass.newInstance();
-            hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, Collections.emptySet());
-
-            list.add(target);
-        }
-        return list;
-    }
 
     public static <T> List<T> listFromQuery(Connection connection, Class<T> entityClass, String sql, Object... args) throws SQLException, IllegalAccessException, IOException, InstantiationException {
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -81,7 +36,7 @@ public class OrmReader {
             PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                return resultSetToList(resultSet, entityClass);
+                return ResultSetToolBox.resultSetToList(resultSet, entityClass);
             }
         }
     }
@@ -91,27 +46,13 @@ public class OrmReader {
         return listFromQuery(connection, clazz, sql, args);
     }
 
-    public static <T> Optional<T> resultSetToObject(ResultSet resultSet, Class<T> targetClass) throws SQLException, IllegalAccessException, InstantiationException, IOException {
-
-        ResultSetColumnInfo resultSetColumnInfo = new ResultSetColumnInfo(resultSet.getMetaData());
-        Introspected introspected = Introspector.getIntrospected(targetClass);
-
-        if (resultSet.next()) {
-
-            T target = (T) targetClass.newInstance();
-            hydrateEntity(introspected, target, resultSet, resultSetColumnInfo, Collections.emptySet());
-            return Optional.of(target);
-        }
-        return Optional.empty();
-    }
-
     public static <T> Optional<T> objectFromSql(Connection connection, Class<T> clazz, String sql, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             PreparedStatementToolbox.populateStatementParameters(stmt, args);
 
             try (ResultSet resultSet = stmt.executeQuery()) {
-                return resultSetToObject(resultSet, clazz);
+                return ResultSetToolBox.resultSetToObject(resultSet, clazz);
             }
         }
     }
