@@ -122,10 +122,10 @@ public class SqlQueriesTest {
     public void insertObject () {
         Product transientProduct = new Product("D4");
 
-        Product persistedProduct = sqlQueries.insertObject(transientProduct);
+        int rowCount = sqlQueries.insertObject(transientProduct);
 
-        assertThat(persistedProduct).isNotNull();
-        assertThat(persistedProduct.getId()).isGreaterThan(0l);
-        assertThat(persistedProduct.getProductCode()).isEqualTo("D4");
+        assertThat(rowCount).isEqualTo(1);
+        assertThat(transientProduct.getId()).isGreaterThan(0l);
+        assertThat(transientProduct.getProductCode()).isEqualTo("D4");
     }
 }

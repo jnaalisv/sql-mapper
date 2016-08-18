@@ -105,7 +105,7 @@ public class SqlQueries {
                 .intValue();
     }
 
-    public <T> T insertObject(T object) {
+    public <T> int insertObject(T object) {
         return sqlExecutor.getConnection(
                 connection -> {
 
@@ -114,9 +114,7 @@ public class SqlQueries {
                     String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
 
                     try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
-                        int rowCount = StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, object);
-
-                        return object;
+                        return StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, object);
                     }
                 }
         );
