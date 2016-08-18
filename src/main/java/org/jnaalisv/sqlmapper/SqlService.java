@@ -39,7 +39,7 @@ public class SqlService {
         }
     }
 
-    private static <T> T prepareStatement(Connection connection, String sql, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
+    public static <T> T prepareStatement(Connection connection, String sql, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
         LOGGER.debug("prepareStatement "+ sql);
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql) ) {
             PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
@@ -47,7 +47,7 @@ public class SqlService {
         }
     }
 
-    private static <T> T executeStatement(PreparedStatement preparedStatement, ResultSetConsumer<T> resultSetConsumer) throws Exception {
+    public static <T> T executeStatement(PreparedStatement preparedStatement, ResultSetConsumer<T> resultSetConsumer) throws Exception {
         try (ResultSet resultSet = preparedStatement.executeQuery()) {
             return resultSetConsumer.consume(resultSet);
         }

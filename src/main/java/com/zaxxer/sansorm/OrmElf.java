@@ -21,7 +21,6 @@ import com.zaxxer.sansorm.internal.OrmWriter;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +40,7 @@ public final class OrmElf {
      * @return the populated object
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
+    public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws Exception {
         return OrmReader.objectById(connection, clazz, args);
     }
 
@@ -68,7 +67,7 @@ public final class OrmElf {
      * @return the populated object
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws Exception, IOException {
         return OrmReader.objectFromClause(connection, clazz, clause, args);
     }
 
@@ -87,7 +86,7 @@ public final class OrmElf {
      * @return a list of populated objects
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws Exception {
         return OrmReader.listFromClause(connection, clazz, clause, args);
     }
 
@@ -102,7 +101,7 @@ public final class OrmElf {
      * @return The result count.
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException {
+    public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws Exception {
         return OrmReader.countObjectsFromClause(connection, clazz, clause, args);
     }
 
@@ -117,7 +116,7 @@ public final class OrmElf {
      * @return the resulting number or <code>null</code>
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
+    public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws Exception {
         return OrmReader.numberFromSql(connection, sql, args);
     }
 
@@ -141,7 +140,7 @@ public final class OrmElf {
      * @param <T>        the class template
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException, InstantiationException, IllegalAccessException {
+    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws Exception {
         return OrmWriter.insertListBatched(connection, iterable);
     }
 
@@ -182,11 +181,11 @@ public final class OrmElf {
      * @return 0 if no row was deleted, 1 if the row was deleted
      * @throws SQLException if a {@link SQLException} occurs
      */
-    public static <T> int deleteObject(Connection connection, T target) throws SQLException, InstantiationException, IllegalAccessException {
+    public static <T> int deleteObject(Connection connection, T target) throws Exception {
         return OrmWriter.deleteObject(connection, target);
     }
 
-    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, InstantiationException, IllegalAccessException {
+    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws Exception {
         return OrmWriter.deleteObjectById(connection, clazz, args);
     }
 

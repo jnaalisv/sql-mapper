@@ -17,53 +17,59 @@
 package com.zaxxer.sansorm.internal;
 
 import org.jnaalisv.sqlmapper.CachingSqlGenerator;
-import org.jnaalisv.sqlmapper.PreparedStatementToolbox;
+import org.jnaalisv.sqlmapper.ResultSetConsumer;
 import org.jnaalisv.sqlmapper.ResultSetToolBox;
+import org.jnaalisv.sqlmapper.SqlProducer;
+import org.jnaalisv.sqlmapper.SqlService;
 
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
 public class OrmReader {
 
-    public static <T> List<T> listFromQuery(Connection connection, Class<T> entityClass, String sql, Object... args) throws SQLException, IllegalAccessException, IOException, InstantiationException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-
-            PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
-
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                return ResultSetToolBox.resultSetToList(resultSet, entityClass);
-            }
-        }
+    private static <T> T connectPrepareExecute(Connection connection, SqlProducer sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) throws Exception {
+        return SqlService.prepareStatement(
+                connection,
+                sqlProducer.produce(),
+                stmt -> SqlService.executeStatement(
+                        stmt,
+                        resultSetConsumer
+                ),
+                args
+            );
     }
 
-    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
+    public static <T> List<T> listFromQuery(Connection connection, Class<T> entityClass, String sql, Object... args) throws Exception {
+        return connectPrepareExecute(
+                connection,
+                () -> sql,
+                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
+                args
+        );
+    }
+
+    public static <T> List<T> listFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws Exception {
         String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
         return listFromQuery(connection, clazz, sql, args);
     }
 
-    public static <T> Optional<T> objectFromSql(Connection connection, Class<T> clazz, String sql, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            PreparedStatementToolbox.populateStatementParameters(stmt, args);
-
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                return ResultSetToolBox.resultSetToObject(resultSet, clazz);
-            }
-        }
+    public static <T> Optional<T> objectFromSql(Connection connection, Class<T> entityClass, String sql, Object... args) throws Exception {
+        return connectPrepareExecute(
+                connection,
+                () -> sql,
+                resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
+                args
+        );
     }
 
-    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, InstantiationException, IllegalAccessException, IOException {
+    public static <T> Optional<T> objectFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws Exception {
         String sql = CachingSqlGenerator.generateSelectFromClause(Introspector.getIntrospected(clazz), clause);
 
         return objectFromSql(connection, clazz, sql, args);
     }
 
-    public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+    public static <T> Optional<T> objectById(Connection connection, Class<T> clazz, Object... args) throws Exception {
         Introspected introspected = Introspector.getIntrospected(clazz);
 
         String where = CachingSqlGenerator.constructWhereSql(introspected.getIdColumnNames());
@@ -71,7 +77,7 @@ public class OrmReader {
         return objectFromClause(connection, clazz, where, args);
     }
 
-    public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws SQLException, IllegalAccessException, InstantiationException {
+    public static <T> int countObjectsFromClause(Connection connection, Class<T> clazz, String clause, Object... args) throws Exception {
         String sql = CachingSqlGenerator.countObjectsFromClause(Introspector.getIntrospected(clazz), clause);
 
         return numberFromSql(connection, sql, args)
@@ -79,17 +85,17 @@ public class OrmReader {
                 .intValue();
     }
 
-    public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            PreparedStatementToolbox.populateStatementParameters(stmt, args);
-
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                if (resultSet.next()) {
-                    return Optional.of( (Number) resultSet.getObject(1));
-                }
-                return Optional.empty();
-            }
-        }
+    public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws Exception {
+        return connectPrepareExecute(
+                connection,
+                () -> sql,
+                resultSet -> {
+                    if (resultSet.next()) {
+                        return Optional.of( (Number) resultSet.getObject(1));
+                    }
+                    return Optional.empty();
+                },
+                args
+        );
     }
 }
