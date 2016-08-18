@@ -2,6 +2,8 @@ package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.internal.Introspector;
 import com.zaxxer.sansorm.internal.OrmReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class SqlService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlService.class);
 
     private final DataSource dataSource;
 
@@ -20,6 +23,7 @@ public class SqlService {
     }
 
     private final <T> T getConnection(ConnectionConsumer<T> connectionConsumer) {
+        LOGGER.debug("getConnection");
         try (Connection connection = FailFastResourceProxy.wrap(dataSource.getConnection(), Connection.class) ) {
             return connectionConsumer.consume(connection);
         }
@@ -27,15 +31,17 @@ public class SqlService {
             if (e.getNextException() != null) {
                 e = e.getNextException();
             }
+            LOGGER.debug("SQLException ", e);
             throw new RuntimeException(e);
         }
-
         catch (Exception e) {
+            LOGGER.debug("Exception ", e);
             throw new RuntimeException(e);
         }
     }
 
     private static <T> T prepareStatement(Connection connection, String sql, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
+        LOGGER.debug("prepareStatement "+ sql);
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql) ) {
             PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
             return preparedStatementConsumer.consume(preparedStatement);
