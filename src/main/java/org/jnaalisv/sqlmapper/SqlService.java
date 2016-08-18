@@ -59,15 +59,12 @@ public class SqlService {
 
     public <T> T connectPrepareExecute(SqlProducer sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) {
         return getConnection(
-                conn -> prepareStatement(
+            conn -> prepareStatement(
                         conn,
                         sqlProducer.produce(),
-                        stmt -> executeStatement(
-                                stmt,
-                                resultSetConsumer
-                        ),
+                        stmt -> executeStatement(stmt, resultSetConsumer),
                         args
-                )
+            )
         );
     }
 

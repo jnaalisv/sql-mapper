@@ -1,5 +1,7 @@
 package org.jnaalisv.sqlmapper;
 
+import com.zaxxer.sansorm.internal.Introspected;
+
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -37,5 +39,17 @@ public final class PreparedStatementToolbox {
         }
 
         return parameterTypes;
+    }
+
+    public static <T> int setStatementParameters(PreparedStatement stmt, String[] columnNames, int[] parameterTypes, Introspected introspected, T item) throws SQLException, IllegalAccessException {
+        int parameterIndex = 1;
+        for (String column : columnNames) {
+            int parameterType = parameterTypes[parameterIndex - 1];
+            Object fieldValue = introspected.get(item, column);
+            setStatementParameter(stmt, parameterIndex, fieldValue, parameterType);
+            ++parameterIndex;
+        }
+
+        return parameterIndex;
     }
 }

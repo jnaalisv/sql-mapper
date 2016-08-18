@@ -29,6 +29,44 @@ import java.util.Iterator;
 
 public class OrmWriter {
 
+    public static <T> T updateObject(Connection connection, String sql, T target, Introspected introspected) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            setParamsExecute(target, introspected, introspected.getUpdatableColumns(), stmt);
+
+            return target;
+        }
+    }
+
+    public static <T> T updateObject(Connection connection, T target) throws SQLException, IllegalAccessException, InstantiationException, IOException {
+        Class<?> clazz = target.getClass();
+        Introspected introspected = Introspector.getIntrospected(clazz);
+        String sql = CachingSqlGenerator.createStatementForUpdateSql(introspected);
+
+        return updateObject(connection, sql, target, introspected);
+    }
+
+
+    public static int executeUpdate(Connection connection, String sql, Object... args) throws SQLException {
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            PreparedStatementToolbox.populateStatementParameters(stmt, args);
+
+            return stmt.executeUpdate();
+        }
+    }
+
+    private static <T> PreparedStatement prepareStatementForInsert(Connection connection, TableSpecs tableSpecs) throws SQLException {
+        String sql = CachingSqlGenerator.createStatementForInsertSql(tableSpecs);
+        if (tableSpecs.hasGeneratedId()) {
+            return connection.prepareStatement(sql, tableSpecs.getIdColumnNames());
+        } else {
+            return connection.prepareStatement(sql);
+        }
+    }
+
     public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws SQLException, IllegalAccessException, InstantiationException {
         Iterator<T> iterableIterator = iterable.iterator();
         if (!iterableIterator.hasNext()) {
@@ -44,7 +82,7 @@ public class OrmWriter {
             int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
             for (T item : iterable) {
-                setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
+                PreparedStatementToolbox.setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
                 stmt.addBatch();
                 stmt.clearParameters();
             }
@@ -69,7 +107,7 @@ public class OrmWriter {
             int rowCount = 0;
 
             for (T item : iterable) {
-                setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
+                PreparedStatementToolbox.setStatementParameters(stmt, columnNames, parameterTypes, introspected, item);
 
                 rowCount += stmt.executeUpdate();
 
@@ -88,65 +126,10 @@ public class OrmWriter {
         }
     }
 
-    public static <T> T insertObject(Connection connection, T target) throws SQLException, IOException, IllegalAccessException, InstantiationException {
-        Class<?> clazz = target.getClass();
-        Introspected introspected = Introspector.getIntrospected(clazz);
-        String[] columnNames = introspected.getInsertableColumns();
-
-        try (PreparedStatement stmt = prepareStatementForInsert(connection, introspected)) {
-            setParamsExecute(target, introspected, columnNames, stmt);
-
-            return target;
-        }
-    }
-
-    public static <T> T updateObject(Connection connection, T target) throws SQLException, IllegalAccessException, InstantiationException, IOException {
-        Class<?> clazz = target.getClass();
-        Introspected introspected = Introspector.getIntrospected(clazz);
-        String sql = CachingSqlGenerator.createStatementForUpdateSql(introspected);
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            setParamsExecute(target, introspected, introspected.getUpdatableColumns(), stmt);
-
-            return target;
-        }
-    }
-
-    public static <T> int deleteObject(Connection connection, T target) throws SQLException, IllegalAccessException, InstantiationException {
-        Class<?> clazz = target.getClass();
-        Introspected introspected = Introspector.getIntrospected(clazz);
-
-        return deleteObjectById(connection, clazz, introspected.getActualIds(target));
-    }
-
-    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, IllegalAccessException, InstantiationException {
-
-        String sql = CachingSqlGenerator.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
-
-        return executeUpdate(connection, sql, args);
-    }
-
-    public static int executeUpdate(Connection connection, String sql, Object... args) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            PreparedStatementToolbox.populateStatementParameters(stmt, args);
-            return stmt.executeUpdate();
-        }
-    }
-
-    private static <T> PreparedStatement prepareStatementForInsert(Connection connection, TableSpecs tableSpecs) throws SQLException {
-        String sql = CachingSqlGenerator.createStatementForInsertSql(tableSpecs);
-        if (tableSpecs.hasGeneratedId()) {
-            return connection.prepareStatement(sql, tableSpecs.getIdColumnNames());
-        } else {
-            return connection.prepareStatement(sql);
-        }
-    }
-
     private static <T> int setParamsExecute(T target, Introspected introspected, String[] columnNames, PreparedStatement stmt) throws SQLException, IOException, IllegalAccessException {
         int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(stmt);
 
-        int parameterIndex = setStatementParameters(stmt, columnNames, parameterTypes, introspected, target);
+        int parameterIndex = PreparedStatementToolbox.setStatementParameters(stmt, columnNames, parameterTypes, introspected, target);
         // If there is still a parameter left to be set, it's the ID used for an update
         if (parameterIndex <= parameterTypes.length) {
             for (Object id : introspected.getActualIds(target)) {
@@ -168,16 +151,29 @@ public class OrmWriter {
         return rowCount;
     }
 
-    public static <T> int setStatementParameters(PreparedStatement stmt, String[] columnNames, int[] parameterTypes, Introspected introspected, T item) throws SQLException, IllegalAccessException {
-        int parameterIndex = 1;
-        for (String column : columnNames) {
-            int parameterType = parameterTypes[parameterIndex - 1];
-            Object fieldValue = introspected.get(item, column);
-            PreparedStatementToolbox.setStatementParameter(stmt, parameterIndex, fieldValue, parameterType);
-            ++parameterIndex;
-        }
+    public static <T> T insertObject(Connection connection, T target) throws SQLException, IOException, IllegalAccessException, InstantiationException {
+        Class<?> clazz = target.getClass();
+        Introspected introspected = Introspector.getIntrospected(clazz);
+        String[] columnNames = introspected.getInsertableColumns();
 
-        return parameterIndex;
+        try (PreparedStatement stmt = prepareStatementForInsert(connection, introspected)) {
+            setParamsExecute(target, introspected, columnNames, stmt);
+
+            return target;
+        }
     }
 
+    public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws SQLException, IllegalAccessException, InstantiationException {
+
+        String sql = CachingSqlGenerator.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
+
+        return executeUpdate(connection, sql, args);
+    }
+
+    public static <T> int deleteObject(Connection connection, T target) throws SQLException, IllegalAccessException, InstantiationException {
+        Class<?> clazz = target.getClass();
+        Introspected introspected = Introspector.getIntrospected(clazz);
+
+        return deleteObjectById(connection, clazz, introspected.getActualIds(target));
+    }
 }
