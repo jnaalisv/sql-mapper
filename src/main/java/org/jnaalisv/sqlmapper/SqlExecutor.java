@@ -85,6 +85,6 @@ public class SqlExecutor {
     }
 
     public <T> List<T> executeQuery(Class<T> entityClass, final String sql, final Object... args) {
-        return SqlClosure.execute(connection -> OrmReader.listFromQuery(connection, entityClass, sql, args));
+        return execute(connection -> OrmReader.listFromQuery(connection, entityClass, sql, args));
     }
 }

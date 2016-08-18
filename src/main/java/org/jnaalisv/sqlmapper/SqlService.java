@@ -42,7 +42,11 @@ public class SqlService {
     public static <T> T prepareStatement(Connection connection, String sql, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
         LOGGER.debug("prepareStatement "+ sql);
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql) ) {
-            PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
+
+            if (args.length != 0 ) {
+                PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
+            }
+            
             return preparedStatementConsumer.consume(preparedStatement);
         }
     }
