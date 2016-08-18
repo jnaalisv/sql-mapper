@@ -65,7 +65,9 @@ public class OrmWriter {
             return new int[]{};
         }
 
-        Class<?> clazz = iterableIterator.next().getClass();
+        T target = iterableIterator.next();
+
+        Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
         String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
@@ -98,7 +100,9 @@ public class OrmWriter {
             return 0;
         }
 
-        Class<?> clazz = iterableIterator.next().getClass();
+        T target = iterableIterator.next();
+
+        Class<?> clazz = target.getClass();
         Introspected introspected = Introspector.getIntrospected(clazz);
         String[] columnNames = introspected.getInsertableColumns();
         String sql = CachingSqlGenerator.createStatementForInsertSql(introspected);
@@ -115,16 +119,13 @@ public class OrmWriter {
                     int[] parameterTypes = PreparedStatementToolbox.getParameterTypes(preparedStatement);
                     int rowCount = 0;
                     for (T item : iterable) {
-                        PreparedStatementToolbox.setStatementParameters(preparedStatement, columnNames, parameterTypes, introspected, item);
 
+                        PreparedStatementToolbox.setStatementParameters(preparedStatement, columnNames, parameterTypes, introspected, item);
                         rowCount += preparedStatement.executeUpdate();
 
                         try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
-                            if (generatedKeys != null) {
-                                final String idColumn = introspected.getFirstColumnNames();
-                                while (generatedKeys.next()) {
-                                    introspected.set(item, idColumn, generatedKeys.getObject(1));
-                                }
+                            if (generatedKeys != null && generatedKeys.next()) {
+                                introspected.updateGeneratedIdValue(item, generatedKeys.getObject(1));
                             }
                         }
 
@@ -149,12 +150,9 @@ public class OrmWriter {
 
         int rowCount = stmt.executeUpdate();
 
-        if (introspected.hasGeneratedId()) {
-
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys != null && generatedKeys.next()) {
-                    introspected.set(target, introspected.getFirstColumnNames(), generatedKeys.getObject(1));
-                }
+        try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+            if (generatedKeys != null && generatedKeys.next()) {
+                introspected.updateGeneratedIdValue(target, generatedKeys.getObject(1));
             }
         }
         return rowCount;

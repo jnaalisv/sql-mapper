@@ -337,6 +337,14 @@ public class Introspected implements TableSpecs {
         }
     }
 
+    public <T> void updateGeneratedIdValue(T item, Object object) throws IllegalAccessException, SQLException, IOException {
+        if (hasGeneratedId()) {
+            set(item, idColumnNames[0], object);
+        } else {
+            // TODO: log?
+        }
+    }
+
     private static class FieldColumnInfo {
         private boolean updatable;
         private boolean insertable;
