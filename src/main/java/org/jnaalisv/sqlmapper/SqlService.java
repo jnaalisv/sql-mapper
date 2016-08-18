@@ -36,14 +36,14 @@ public class SqlService {
     }
 
     private static <T> T prepareStatement(Connection connection, String sql, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
-        try (PreparedStatement preparedStatement = FailFastResourceProxy.wrap(connection.prepareStatement(sql), PreparedStatement.class) ) {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql) ) {
             PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
             return preparedStatementConsumer.consume(preparedStatement);
         }
     }
 
     private static <T> T executeStatement(PreparedStatement preparedStatement, ResultSetConsumer<T> resultSetConsumer) throws Exception {
-        try (ResultSet resultSet = FailFastResourceProxy.wrap(preparedStatement.executeQuery(), ResultSet.class)) {
+        try (ResultSet resultSet = preparedStatement.executeQuery()) {
             return resultSetConsumer.consume(resultSet);
         }
     }
