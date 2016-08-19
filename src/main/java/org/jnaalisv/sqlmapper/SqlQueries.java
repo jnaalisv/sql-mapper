@@ -89,17 +89,6 @@ public class SqlQueries {
         );
     }
 
-    public <T> T executeInsert(Callable<String> sqlProducer, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) {
-        return getConnection(
-                conn -> prepareStatementForInsert(
-                        conn,
-                        sqlProducer,
-                        returnColumns,
-                        preparedStatementConsumer
-                )
-        );
-    }
-
     public <T> T executeUpdate(Callable<String> sqlProducer, PreparedStatementConsumer<T> preparedStatementConsumer, Object...args) {
         return getConnection(
                 conn -> prepareStatement(
@@ -201,6 +190,17 @@ public class SqlQueries {
     // -------------------- //
     //  Insert Statements   //
     // -------------------- //
+
+    public <T> T executeInsert(Callable<String> sqlProducer, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) {
+        return getConnection(
+                conn -> prepareStatementForInsert(
+                        conn,
+                        sqlProducer,
+                        returnColumns,
+                        preparedStatementConsumer
+                )
+        );
+    }
 
     public <T> int insertObject(T object) {
         return getConnection(
