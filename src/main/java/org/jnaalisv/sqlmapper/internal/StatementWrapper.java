@@ -7,19 +7,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class StatementWrapper {
+public final class StatementWrapper {
 
     private final PreparedStatement preparedStatement;
     private final int[] parameterTypes;
     private int totalRowCount;
 
-    public StatementWrapper(PreparedStatement preparedStatement) throws SQLException {
+    public StatementWrapper(final PreparedStatement preparedStatement) throws SQLException {
         this.preparedStatement = preparedStatement;
         this.parameterTypes = PreparedStatementToolbox.getParameterTypes(preparedStatement);
         this.totalRowCount = 0;
     }
 
-    public <T> int setStatementParameters(String[] columnNames, Introspected introspected, T item) throws SQLException, IllegalAccessException {
+    private <T> int setStatementParameters(String[] columnNames, final Introspected introspected, final T item) throws SQLException, IllegalAccessException {
         int parameterIndex =  PreparedStatementToolbox.setStatementParameters(preparedStatement, columnNames, parameterTypes, introspected, item);
 
         // If there is still a parameter left to be set, it's the ID used for an update
@@ -32,7 +32,7 @@ public class StatementWrapper {
         return parameterIndex;
     }
 
-    public <T> void updateGeneratedKeys(Introspected introspected, T item) throws SQLException, IOException, IllegalAccessException {
+    private <T> void updateGeneratedKeys(final Introspected introspected, final T item) throws SQLException, IOException, IllegalAccessException {
         try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
             if (generatedKeys != null && generatedKeys.next()) {
                 introspected.updateGeneratedIdValue(item, generatedKeys.getObject(1));
@@ -40,43 +40,43 @@ public class StatementWrapper {
         }
     }
 
-    public void addBatch() throws SQLException {
-        preparedStatement.addBatch();
+    private int executeUpdate() throws SQLException {
+        int rowCount =  preparedStatement.executeUpdate();
+        totalRowCount += rowCount;
+        return rowCount;
     }
 
-    public void clearParameters() throws SQLException {
+    private <T> int insertOrUpdate(String[] columnNames, final Introspected introspected, final T target) throws SQLException, IOException, IllegalAccessException {
+        setStatementParameters(columnNames, introspected, target);
+        executeUpdate();
+        updateGeneratedKeys(introspected, target);
         preparedStatement.clearParameters();
+        return getTotalRowCount();
     }
 
     public int[] executeBatch() throws SQLException {
         return preparedStatement.executeBatch();
     }
 
-    public int executeUpdate() throws SQLException {
-        int rowCount =  preparedStatement.executeUpdate();
-        totalRowCount += rowCount;
-        return rowCount;
-    }
-
     public int getTotalRowCount() {
         return totalRowCount;
     }
 
-    public <T> int insertOrUpdate(String[] columnNames, Introspected introspected, T target) throws SQLException, IOException, IllegalAccessException {
-        setStatementParameters(columnNames, introspected, target);
-        executeUpdate();
-        updateGeneratedKeys(introspected, target);
-        clearParameters();
-        return getTotalRowCount();
-    }
-
-    public static <T> int insertOrUpdate(PreparedStatement stmt, String[] columnNames, Introspected introspected, T target) throws SQLException, IOException, IllegalAccessException {
-        return new StatementWrapper(stmt).insertOrUpdate(columnNames, introspected, target);
-    }
-
-    public <T> void addBatch(String[] insertableColumns, Introspected introspected, T item) throws SQLException, IllegalAccessException {
+    public <T> void addBatch(final Introspected introspected, final T item) throws SQLException, IllegalAccessException {
         setStatementParameters(introspected.getInsertableColumns(), introspected, item);
-        addBatch();
-        clearParameters();
+        preparedStatement.addBatch();
+        preparedStatement.clearParameters();
+    }
+
+    public static <T> int insert(PreparedStatement preparedStatement, final Introspected introspected, final T target) throws IllegalAccessException, SQLException, IOException {
+        return new StatementWrapper(preparedStatement).insertOrUpdate(introspected.getInsertableColumns(), introspected, target);
+    }
+
+    public static <T> int update(PreparedStatement preparedStatement, final Introspected introspected, final T target) throws IllegalAccessException, SQLException, IOException {
+        return new StatementWrapper(preparedStatement).insertOrUpdate(introspected.getUpdatableColumns(), introspected, target);
+    }
+
+    public <T> void insert(final Introspected introspected, final T item) throws IllegalAccessException, SQLException, IOException {
+        insertOrUpdate(introspected.getInsertableColumns(), introspected, item);
     }
 }

@@ -34,7 +34,7 @@ public class OrmWriter {
         String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
         return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement ->
-                StatementWrapper.insertOrUpdate(preparedStatement, introspected.getInsertableColumns(), introspected, target)
+                StatementWrapper.insert(preparedStatement, introspected, target)
         );
     }
 
@@ -44,7 +44,7 @@ public class OrmWriter {
         String sql = CachingSqlStringBuilder.createStatementForUpdateSql(introspected);
 
         return SqlExecutor.prepareStatement(connection, sql, preparedStatement ->
-                StatementWrapper.insertOrUpdate(preparedStatement, introspected.getUpdatableColumns(), introspected, target)
+                StatementWrapper.update(preparedStatement, introspected, target)
         );
     }
     
@@ -74,7 +74,7 @@ public class OrmWriter {
                 preparedStatement -> {
                     StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                     for (T item : iterable) {
-                        statementWrapper.addBatch(introspected.getInsertableColumns(), introspected, item);
+                        statementWrapper.addBatch(introspected, item);
                     }
                     return statementWrapper.executeBatch();
                 }
@@ -100,7 +100,7 @@ public class OrmWriter {
                 preparedStatement -> {
                     StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
                     for (T item : iterable) {
-                        statementWrapper.insertOrUpdate(introspected.getInsertableColumns(), introspected, item);
+                        statementWrapper.insert(introspected, item);
                     }
                     return statementWrapper.getTotalRowCount();
                 }
