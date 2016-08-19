@@ -119,4 +119,14 @@ public class SqlQueries {
                 }
         );
     }
+
+    public <T> int updateObject(T target) {
+        return sqlExecutor.executeUpdate(
+                () -> CachingSqlStringBuilder.createStatementForUpdateSql(Introspector.getIntrospected(target.getClass())),
+                preparedStatement -> StatementWrapper.update(
+                        preparedStatement,
+                        Introspector.getIntrospected(target.getClass()),
+                        target)
+        );
+    }
 }

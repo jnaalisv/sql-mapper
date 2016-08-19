@@ -13,6 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -127,5 +128,22 @@ public class SqlQueriesTest {
         assertThat(rowCount).isEqualTo(1);
         assertThat(transientProduct.getId()).isGreaterThan(0l);
         assertThat(transientProduct.getProductCode()).isEqualTo("D4");
+    }
+
+    @Test
+    public void updateObject() {
+        Product productA1 = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        productA1.setProductCode("AA11");
+        productA1.setIntroduced(LocalDate.now());
+        long originalId = productA1.getId();
+
+        int rowCount = sqlQueries.updateObject(productA1);
+        assertThat(rowCount).isEqualTo(1);
+
+        Product newlyFetchedProductA1 = sqlQueries.objectFromClause(Product.class, "product_code = ?", "AA11").get();
+
+        assertThat(newlyFetchedProductA1.getId()).isEqualTo(originalId);
+
+        assertThat(newlyFetchedProductA1.getProductCode()).isEqualTo("AA11");
     }
 }

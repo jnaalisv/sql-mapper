@@ -94,4 +94,14 @@ public class SqlExecutor {
                 )
         );
     }
+
+    public <T> T executeUpdate(Callable<String> sqlProducer, PreparedStatementConsumer<T> preparedStatementConsumer) {
+        return getConnection(
+                conn -> prepareStatement(
+                        conn,
+                        sqlProducer,
+                        preparedStatementConsumer
+                )
+        );
+    }
 }
