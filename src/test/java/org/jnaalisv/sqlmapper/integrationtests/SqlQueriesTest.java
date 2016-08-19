@@ -43,7 +43,7 @@ public class SqlQueriesTest {
     @Test
     public void list() throws SQLException {
 
-        List<Product> products = sqlQueries.list(Product.class);
+        List<Product> products = sqlQueries.queryAll(Product.class);
         assertThat(products.size()).isEqualTo(3);
 
         products.forEach(product -> {
@@ -57,20 +57,20 @@ public class SqlQueriesTest {
 
     @Test
     public void listQuery() {
-        List<Product> products = sqlQueries.queryForList(Product.class, "select id, product_code from products");
+        List<Product> products = sqlQueries.query(Product.class, () -> "select id, product_code from products");
         assertThat(products.size()).isEqualTo(3);
     }
 
     @Test
     public void listFromClause() {
         List<Product> products;
-        products = sqlQueries.listFromClause(Product.class, null);
+        products = sqlQueries.queryByClause(Product.class, null);
         assertThat(products.size()).isEqualTo(3);
 
-        products = sqlQueries.listFromClause(Product.class, "product_code = ?",  "KJHASD");
+        products = sqlQueries.queryByClause(Product.class, "product_code = ?",  "KJHASD");
         assertThat(products.size()).isEqualTo(0);
 
-        products = sqlQueries.listFromClause(Product.class, "product_code = ?",  "A1");
+        products = sqlQueries.queryByClause(Product.class, "product_code = ?",  "A1");
         assertThat(products.size()).isEqualTo(1);
         assertThat(products.get(0).getProductCode()).isEqualTo("A1");
     }
@@ -78,7 +78,7 @@ public class SqlQueriesTest {
     @Test
     public void getObjectById() throws SQLException {
 
-        List<Product> products = sqlQueries.list(Product.class);
+        List<Product> products = sqlQueries.queryAll(Product.class);
         Product firstProductOfAllProducts = products.get(0);
 
         Product product = sqlQueries.getObjectById(Product.class, firstProductOfAllProducts.getId()).get();
@@ -91,7 +91,7 @@ public class SqlQueriesTest {
 
     @Test
     public void invalidSql() {
-        Throwable thrown = catchThrowable(() -> sqlQueries.listFromClause(Product.class, "INVALID WHERE CLAUSE",  "KJHASD"));
+        Throwable thrown = catchThrowable(() -> sqlQueries.queryByClause(Product.class, "INVALID WHERE CLAUSE",  "KJHASD"));
 
         assertThat(thrown)
                 .isInstanceOf(RuntimeException.class)
@@ -200,7 +200,7 @@ public class SqlQueriesTest {
 
         assertThat(rowCount).isEqualTo(1);
 
-        List<Product> products = sqlQueries.listFromClause(Product.class, "id > ?", 0l);
+        List<Product> products = sqlQueries.queryByClause(Product.class, "id > ?", 0l);
         assertThat(products.size()).isEqualTo(2);
         assertThat(products.stream().map(Product::getId).collect(Collectors.toList())).doesNotContain(product.getId());
     }
@@ -213,7 +213,7 @@ public class SqlQueriesTest {
 
         assertThat(rowCount).isEqualTo(1);
 
-        List<Product> products = sqlQueries.listFromClause(Product.class, "id > ?", 0l);
+        List<Product> products = sqlQueries.queryByClause(Product.class, "id > ?", 0l);
         assertThat(products.size()).isEqualTo(2);
 
         assertThat(products.stream().map(Product::getId).collect(Collectors.toList())).doesNotContain(product.getId());
@@ -232,17 +232,17 @@ public class SqlQueriesTest {
 
     @Test
     public void executeQuery() {
-        List<Product> products = sqlQueries.executeQuery(Product.class, "select id, product_code from products");
+        List<Product> products = sqlQueries.query(Product.class, "select id, product_code from products");
         assertThat(products.size()).isEqualTo(3);
 
-        products = sqlQueries.executeQuery(Product.class, "select id, product_code from products where id < 0");
+        products = sqlQueries.query(Product.class, "select id, product_code from products where id < 0");
         assertThat(products.size()).isEqualTo(0);
     }
 
     @Test
     public void executeQueryError() {
 
-        Throwable thrown = catchThrowable(() -> sqlQueries.executeQuery(Product.class, "INVALID"));
+        Throwable thrown = catchThrowable(() -> sqlQueries.query(Product.class, "INVALID"));
 
         assertThat(thrown)
                 .isInstanceOf(RuntimeException.class)

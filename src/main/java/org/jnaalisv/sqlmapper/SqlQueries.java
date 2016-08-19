@@ -29,7 +29,7 @@ public class SqlQueries {
         this.dataSource = dataSource;
     }
 
-    public final <T> T getConnection(ConnectionConsumer<T> connectionConsumer) {
+    private <T> T getConnection(ConnectionConsumer<T> connectionConsumer) {
         LOGGER.debug("getConnection");
         try (Connection connection = dataSource.getConnection() ) {
             return connectionConsumer.consume(connection);
@@ -115,43 +115,30 @@ public class SqlQueries {
     //     List Queries     //
     // -------------------- //
 
-    public final <T> List<T> list(Class<T> entityClass) {
+    public final <T> List<T> query(Class<T> entityClass, Callable<String> sqlQueryProducer, Object... args) {
         return execute(
-                () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), null),
-                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass)
-        );
-    }
-
-    public final <T> List<T> queryForList(Class<T> entityClass, String sql, Object... args) {
-        return execute(
-                () -> sql,
+                sqlQueryProducer,
                 resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
                 args
         );
     }
 
-    public final <T> List<T> queryForList(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
-        return execute(
-                sqlProducer,
-                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
-                args
-        );
+    public <T> List<T> query(Class<T> entityClass, final String fullSqlQuery, final Object... args) {
+        return query(entityClass, () -> fullSqlQuery, args);
     }
 
-    public <T> List<T> listFromClause(Class<T> entityClass, String clause, Object... args) {
-        return queryForList(
-                () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), clause),
+    public <T> List<T> queryByClause(Class<T> entityClass, String sqlWhereClause, Object... args) {
+        return query(
                 entityClass,
+                () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), sqlWhereClause),
                 args
         );
     }
 
-    public <T> List<T> executeQuery(Class<T> entityClass, final String sql, final Object... args) {
-        return execute(
-                () -> sql,
-                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
-                args
-
+    public final <T> List<T> queryAll(Class<T> entityClass) {
+        return query(
+                entityClass,
+                () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), null)
         );
     }
 
