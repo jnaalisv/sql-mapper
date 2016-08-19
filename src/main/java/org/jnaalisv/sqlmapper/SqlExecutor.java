@@ -4,7 +4,6 @@ import org.jnaalisv.sqlmapper.internal.ConnectionConsumer;
 import org.jnaalisv.sqlmapper.internal.FailFastResourceProxy;
 import org.jnaalisv.sqlmapper.internal.PreparedStatementConsumer;
 import org.jnaalisv.sqlmapper.internal.ResultSetConsumer;
-import org.jnaalisv.sqlmapper.internal.SqlProducer;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.Callable;
 
 public class SqlExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlExecutor.class);
@@ -42,7 +42,8 @@ public class SqlExecutor {
         }
     }
 
-    public static <T> T prepareStatement(Connection connection, String sql, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
+    public static <T> T prepareStatement(Connection connection, Callable<String> sqlBuilder, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
+        String sql = sqlBuilder.call();
         LOGGER.debug("prepareStatement "+ sql);
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql) ) {
 
@@ -54,7 +55,8 @@ public class SqlExecutor {
         }
     }
 
-    public static <T> T prepareStatementForInsert(Connection connection, String sql, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) throws Exception {
+    public static <T> T prepareStatementForInsert(Connection connection, Callable<String> sqlBuilder, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) throws Exception {
+        String sql = sqlBuilder.call();
         LOGGER.debug("prepareStatementForInsert "+ sql);
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
             return preparedStatementConsumer.consume(preparedStatement);
@@ -71,22 +73,22 @@ public class SqlExecutor {
     // Public Interface //
     // ---------------- //
 
-    public <T> T execute(SqlProducer sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) {
+    public <T> T execute(Callable<String> sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) {
         return getConnection(
             conn -> prepareStatement(
                         conn,
-                        sqlProducer.produce(),
+                        sqlProducer,
                         stmt -> executeStatement(stmt, resultSetConsumer),
                         args
             )
         );
     }
 
-    public <T> T executeInsert(SqlProducer sqlProducer, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) {
+    public <T> T executeInsert(Callable<String> sqlProducer, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) {
         return getConnection(
                 conn -> prepareStatementForInsert(
                         conn,
-                        sqlProducer.produce(),
+                        sqlProducer,
                         returnColumns,
                         preparedStatementConsumer
                 )

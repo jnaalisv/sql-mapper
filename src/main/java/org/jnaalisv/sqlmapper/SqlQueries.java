@@ -3,12 +3,12 @@ package org.jnaalisv.sqlmapper;
 import com.zaxxer.sansorm.internal.Introspected;
 import com.zaxxer.sansorm.internal.Introspector;
 import org.jnaalisv.sqlmapper.internal.ResultSetToolBox;
-import org.jnaalisv.sqlmapper.internal.SqlProducer;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
 import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 public class SqlQueries {
 
@@ -33,7 +33,7 @@ public class SqlQueries {
         );
     }
 
-    public final <T> List<T> queryForList(SqlProducer sqlProducer, Class<T> entityClass, Object... args) {
+    public final <T> List<T> queryForList(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
         return sqlExecutor.execute(
                 sqlProducer,
                 resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
@@ -49,7 +49,7 @@ public class SqlQueries {
         );
     }
 
-    public final <T> Optional<T> query(SqlProducer sqlProducer, Class<T> entityClass, Object... args) {
+    public final <T> Optional<T> query(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
         return sqlExecutor.execute(
                 sqlProducer,
                 resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
@@ -81,7 +81,7 @@ public class SqlQueries {
         );
     }
 
-    public Optional<Number> numberFromSql(SqlProducer sqlProducer, Object... args) {
+    public Optional<Number> numberFromSql(Callable<String> sqlProducer, Object... args) {
         return sqlExecutor.execute(
                 sqlProducer,
                 resultSet -> {

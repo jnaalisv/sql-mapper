@@ -19,19 +19,19 @@ package com.zaxxer.sansorm.internal;
 import org.jnaalisv.sqlmapper.CachingSqlStringBuilder;
 import org.jnaalisv.sqlmapper.internal.ResultSetConsumer;
 import org.jnaalisv.sqlmapper.internal.ResultSetToolBox;
-import org.jnaalisv.sqlmapper.internal.SqlProducer;
 import org.jnaalisv.sqlmapper.SqlExecutor;
 
 import java.sql.Connection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 public class OrmReader {
 
-    private static <T> T connectPrepareExecute(Connection connection, SqlProducer sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) throws Exception {
+    private static <T> T connectPrepareExecute(Connection connection, Callable<String> sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) throws Exception {
         return SqlExecutor.prepareStatement(
                 connection,
-                sqlProducer.produce(),
+                sqlProducer,
                 stmt -> SqlExecutor.executeStatement(
                         stmt,
                         resultSetConsumer

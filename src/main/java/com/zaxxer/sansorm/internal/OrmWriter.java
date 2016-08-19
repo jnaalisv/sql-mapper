@@ -26,29 +26,29 @@ import java.util.Iterator;
 public class OrmWriter {
 
     public static <T> int insertObject(Connection connection, T target) throws Exception {
-        Class<?> clazz = target.getClass();
+        Introspected introspected = Introspector.getIntrospected(target.getClass());
 
-        Introspected introspected = Introspector.getIntrospected(clazz);
-        String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
-        String[] returnColumns = introspected.getGeneratedIdColumnNames();
-
-        return SqlExecutor.prepareStatementForInsert(connection, sql, returnColumns, preparedStatement ->
-                StatementWrapper.insert(preparedStatement, introspected, target)
+        return SqlExecutor.prepareStatementForInsert(
+                connection,
+                () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
+                introspected.getGeneratedIdColumnNames(),
+                preparedStatement -> StatementWrapper.insert(preparedStatement, introspected, target)
         );
     }
 
     public static <T> int updateObject(Connection connection, T target) throws Exception {
-        Class<?> clazz = target.getClass();
-        Introspected introspected = Introspector.getIntrospected(clazz);
-        String sql = CachingSqlStringBuilder.createStatementForUpdateSql(introspected);
 
-        return SqlExecutor.prepareStatement(connection, sql, preparedStatement ->
-                StatementWrapper.update(preparedStatement, introspected, target)
+        Introspected introspected = Introspector.getIntrospected(target.getClass());
+
+        return SqlExecutor.prepareStatement(
+                connection,
+                () -> CachingSqlStringBuilder.createStatementForUpdateSql(introspected),
+                preparedStatement -> StatementWrapper.update(preparedStatement, introspected, target)
         );
     }
     
     public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
-        return SqlExecutor.prepareStatement(connection, sql, preparedStatement -> {
+        return SqlExecutor.prepareStatement(connection, () -> sql, preparedStatement -> {
             StatementWrapper.populateStatementParameters(preparedStatement, args);
             return preparedStatement.executeUpdate();
         });
@@ -63,12 +63,11 @@ public class OrmWriter {
         T target = iterableIterator.next();
 
         Introspected introspected = Introspector.getIntrospected(target.getClass());
-        String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
         String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
         return SqlExecutor.prepareStatementForInsert(
                 connection,
-                sql,
+                () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
                 returnColumns,
                 preparedStatement -> {
                     StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
@@ -89,12 +88,11 @@ public class OrmWriter {
         T target = iterableIterator.next();
 
         Introspected introspected = Introspector.getIntrospected(target.getClass());
-        String sql = CachingSqlStringBuilder.createStatementForInsertSql(introspected);
         String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
         return SqlExecutor.prepareStatementForInsert(
                 connection,
-                sql,
+                () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
                 returnColumns,
                 preparedStatement -> {
                     StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
