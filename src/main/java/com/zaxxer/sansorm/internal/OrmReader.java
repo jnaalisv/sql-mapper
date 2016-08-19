@@ -32,19 +32,16 @@ public class OrmReader {
         return SqlQueries.prepareStatement(
                 connection,
                 sqlProducer,
-                stmt -> SqlQueries.executeStatement(
-                        stmt,
-                        resultSetConsumer
-                ),
+                stmt -> SqlQueries.executeStatement(stmt, resultSetConsumer),
                 args
             );
     }
 
     public static <T> List<T> listFromQuery(Connection connection, Class<T> entityClass, String sql, Object... args) throws Exception {
-        return connectPrepareExecute(
+        return SqlQueries.prepareStatement(
                 connection,
                 () -> sql,
-                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
+                stmt -> SqlQueries.executeStatement(stmt, rs -> ResultSetToolBox.resultSetToList(rs, entityClass)),
                 args
         );
     }
@@ -54,11 +51,11 @@ public class OrmReader {
         return listFromQuery(connection, clazz, sql, args);
     }
 
-    public static <T> Optional<T> objectFromSql(Connection connection, Class<T> entityClass, String sql, Object... args) throws Exception {
-        return connectPrepareExecute(
+    private static <T> Optional<T> objectFromSql(Connection connection, Class<T> entityClass, String sql, Object... args) throws Exception {
+        return SqlQueries.prepareStatement(
                 connection,
                 () -> sql,
-                resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
+                stmt -> SqlQueries.executeStatement(stmt, resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass)),
                 args
         );
     }
@@ -86,15 +83,16 @@ public class OrmReader {
     }
 
     public static Optional<Number> numberFromSql(Connection connection, String sql, Object... args) throws Exception {
-        return connectPrepareExecute(
+
+        return SqlQueries.prepareStatement(
                 connection,
                 () -> sql,
-                resultSet -> {
+                stmt -> SqlQueries.executeStatement(stmt, resultSet -> {
                     if (resultSet.next()) {
                         return Optional.of( (Number) resultSet.getObject(1));
                     }
                     return Optional.empty();
-                },
+                }),
                 args
         );
     }
