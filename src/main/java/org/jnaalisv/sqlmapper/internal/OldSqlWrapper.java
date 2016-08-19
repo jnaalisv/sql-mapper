@@ -3,10 +3,12 @@ package org.jnaalisv.sqlmapper.internal;
 import com.zaxxer.sansorm.SqlFunction;
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
+import org.jnaalisv.sqlmapper.SqlExecutor;
 import org.jnaalisv.sqlmapper.SqlQueries;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +59,13 @@ public class OldSqlWrapper {
     }
 
     public int executeUpdate(final String sql, final Object... args) {
-        return execute(connection -> OrmWriter.executeUpdate(connection, sql, args));
+        return execute(connection ->
+            SqlExecutor.prepareStatement(
+                    connection,
+                    () -> sql,
+                    PreparedStatement::executeUpdate,
+                    args
+        ));
     }
 
     public final <T> T execute(SqlFunction<T> sqlFunction) {

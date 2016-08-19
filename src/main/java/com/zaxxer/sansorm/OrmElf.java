@@ -18,6 +18,7 @@ package com.zaxxer.sansorm;
 
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
+import org.jnaalisv.sqlmapper.SqlExecutor;
 import org.jnaalisv.sqlmapper.SqlQueries;
 
 import java.io.IOException;
@@ -191,7 +192,12 @@ public final class OrmElf {
     }
 
     public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
-        return OrmWriter.executeUpdate(connection, sql, args);
+        return SqlExecutor.prepareStatement(
+                connection,
+                () -> sql,
+                preparedStatement -> preparedStatement.executeUpdate(),
+                args
+        );
     }
 
 }

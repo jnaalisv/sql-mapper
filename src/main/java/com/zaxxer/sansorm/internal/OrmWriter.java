@@ -21,6 +21,7 @@ import org.jnaalisv.sqlmapper.SqlExecutor;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 
 public class OrmWriter {
 
@@ -45,19 +46,17 @@ public class OrmWriter {
                 preparedStatement -> StatementWrapper.update(preparedStatement, introspected, target)
         );
     }
-    
-    public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
-        return SqlExecutor.prepareStatement(connection, () -> sql, preparedStatement -> {
-            StatementWrapper.populateStatementParameters(preparedStatement, args);
-            return preparedStatement.executeUpdate();
-        });
-    }
 
     public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws Exception {
 
         String sql = CachingSqlStringBuilder.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
 
-        return executeUpdate(connection, sql, args);
+        return SqlExecutor.prepareStatement(
+                connection,
+                () -> sql,
+                PreparedStatement::executeUpdate,
+                args
+        );
     }
 
     public static <T> int deleteObject(Connection connection, T target) throws Exception {
