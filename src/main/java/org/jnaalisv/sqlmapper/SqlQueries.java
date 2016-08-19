@@ -3,7 +3,6 @@ package org.jnaalisv.sqlmapper;
 import com.zaxxer.sansorm.internal.Introspected;
 import com.zaxxer.sansorm.internal.Introspector;
 import org.jnaalisv.sqlmapper.internal.ConnectionConsumer;
-import org.jnaalisv.sqlmapper.internal.FailFastResourceProxy;
 import org.jnaalisv.sqlmapper.internal.PreparedStatementConsumer;
 import org.jnaalisv.sqlmapper.internal.ResultSetConsumer;
 import org.jnaalisv.sqlmapper.internal.ResultSetToolBox;
@@ -32,7 +31,7 @@ public class SqlQueries {
 
     public final <T> T getConnection(ConnectionConsumer<T> connectionConsumer) {
         LOGGER.debug("getConnection");
-        try (Connection connection = FailFastResourceProxy.wrap(dataSource.getConnection(), Connection.class) ) {
+        try (Connection connection = dataSource.getConnection() ) {
             return connectionConsumer.consume(connection);
         }
         catch (SQLException e) {
