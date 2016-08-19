@@ -18,7 +18,6 @@ package com.zaxxer.sansorm.internal;
 
 import org.jnaalisv.sqlmapper.CachingSqlStringBuilder;
 import org.jnaalisv.sqlmapper.SqlExecutor;
-import org.jnaalisv.sqlmapper.internal.PreparedStatementToolbox;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
 import java.sql.Connection;
@@ -50,7 +49,7 @@ public class OrmWriter {
     
     public static int executeUpdate(Connection connection, String sql, Object... args) throws Exception {
         return SqlExecutor.prepareStatement(connection, sql, preparedStatement -> {
-            PreparedStatementToolbox.populateStatementParameters(preparedStatement, args);
+            StatementWrapper.populateStatementParameters(preparedStatement, args);
             return preparedStatement.executeUpdate();
         });
     }
