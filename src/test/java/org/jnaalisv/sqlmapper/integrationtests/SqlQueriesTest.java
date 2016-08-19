@@ -81,12 +81,12 @@ public class SqlQueriesTest {
         List<Product> products = sqlQueries.queryAll(Product.class);
         Product firstProductOfAllProducts = products.get(0);
 
-        Product product = sqlQueries.getObjectById(Product.class, firstProductOfAllProducts.getId()).get();
+        Product product = sqlQueries.queryForOneById(Product.class, firstProductOfAllProducts.getId()).get();
 
         assertThat(product.getId()).isEqualTo(firstProductOfAllProducts.getId());
         assertThat(product.getProductCode()).isEqualTo("A1");
 
-        assertThat(sqlQueries.getObjectById(Product.class, PRODUCT_DOESNT_EXIST)).isEmpty();
+        assertThat(sqlQueries.queryForOneById(Product.class, PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
@@ -101,11 +101,11 @@ public class SqlQueriesTest {
 
     @Test
     public void objectFromClause() {
-        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "A1").get();
 
         assertThat(product.getProductCode()).isEqualTo("A1");
 
-        assertThat(sqlQueries.objectFromClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isEmpty();
+        assertThat(sqlQueries.queryForOneByClause(Product.class, "id = ?", PRODUCT_DOESNT_EXIST)).isEmpty();
     }
 
     @Test
@@ -135,7 +135,7 @@ public class SqlQueriesTest {
 
     @Test
     public void updateObject() {
-        Product productA1 = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product productA1 = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "A1").get();
         productA1.setProductCode("AA11");
         productA1.setIntroduced(LocalDate.now());
         long originalId = productA1.getId();
@@ -143,7 +143,7 @@ public class SqlQueriesTest {
         int rowCount = sqlQueries.updateObject(productA1);
         assertThat(rowCount).isEqualTo(1);
 
-        Product newlyFetchedProductA1 = sqlQueries.objectFromClause(Product.class, "product_code = ?", "AA11").get();
+        Product newlyFetchedProductA1 = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "AA11").get();
 
         assertThat(newlyFetchedProductA1.getId()).isEqualTo(originalId);
 
@@ -163,13 +163,13 @@ public class SqlQueriesTest {
         assertThat(rowCounts[1]).isEqualTo(1);
         assertThat(rowCounts[2]).isEqualTo(1);
 
-        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "Q1").get();
+        Product product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "Q1").get();
         assertThat(product.getProductCode()).isEqualTo("Q1");
 
-        product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "W2").get();
+        product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "W2").get();
         assertThat(product.getProductCode()).isEqualTo("W2");
 
-        product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "E3").get();
+        product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
     }
 
@@ -182,19 +182,19 @@ public class SqlQueriesTest {
 
         assertThat(rowCount).isEqualTo(3);
 
-        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "Q1").get();
+        Product product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "Q1").get();
         assertThat(product.getProductCode()).isEqualTo("Q1");
 
-        product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "W2").get();
+        product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "W2").get();
         assertThat(product.getProductCode()).isEqualTo("W2");
 
-        product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "E3").get();
+        product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
     }
 
     @Test
     public void deleteObject() {
-        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = sqlQueries.deleteObject(product, Product.class);
 
@@ -207,7 +207,7 @@ public class SqlQueriesTest {
 
     @Test
     public void deleteObjectById() {
-        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = sqlQueries.deleteObjectById(Product.class, product.getId());
 
@@ -222,7 +222,7 @@ public class SqlQueriesTest {
 
     @Test
     public void deleteObjectByIdReturnZero() {
-        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+        Product product = sqlQueries.queryForOneByClause(Product.class, "product_code = ?", "A1").get();
 
         int rowCount = sqlQueries.deleteObjectById(Product.class, -1l);
 

@@ -146,24 +146,24 @@ public class SqlQueries {
     //    Object Queries    //
     // -------------------- //
 
-    public final <T> Optional<T> query(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
+    public final <T> Optional<T> queryForOne(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
         return execute(sqlProducer, resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass), args);
     }
 
-    public final <T> Optional<T> query(String sql, Class<T> entityClass, Object... args) {
-        return query(() -> sql, entityClass, args);
+    public final <T> Optional<T> queryForOne(String sql, Class<T> entityClass, Object... args) {
+        return queryForOne(() -> sql, entityClass, args);
     }
 
-    public <T> Optional<T> getObjectById(Class<T> entityClass, Object... ids) {
-        return query(
+    public <T> Optional<T> queryForOneById(Class<T> entityClass, Object... ids) {
+        return queryForOne(
                 () -> CachingSqlStringBuilder.getObjectByIdSql(entityClass),
                 entityClass,
                 ids
         );
     }
 
-    public <T> Optional<T> objectFromClause(Class<T> entityClass, String clause, Object... args) {
-        return query(
+    public <T> Optional<T> queryForOneByClause(Class<T> entityClass, String clause, Object... args) {
+        return queryForOne(
                 () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), clause),
                 entityClass,
                 args
