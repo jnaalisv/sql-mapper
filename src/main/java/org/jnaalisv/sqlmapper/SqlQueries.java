@@ -147,26 +147,18 @@ public class SqlQueries {
     // -------------------- //
 
     public final <T> Optional<T> query(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
-        return execute(
-                sqlProducer,
-                resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
-                args
-        );
-    }
-
-    public <T> Optional<T> getObjectById(Class<T> entityClass, Object... ids) {
-        return execute(
-                () -> CachingSqlStringBuilder.getObjectByIdSql(entityClass),
-                resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
-                ids
-        );
+        return execute(sqlProducer, resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass), args);
     }
 
     public final <T> Optional<T> query(String sql, Class<T> entityClass, Object... args) {
+        return query(() -> sql, entityClass, args);
+    }
+
+    public <T> Optional<T> getObjectById(Class<T> entityClass, Object... ids) {
         return query(
-                () -> sql,
+                () -> CachingSqlStringBuilder.getObjectByIdSql(entityClass),
                 entityClass,
-                args
+                ids
         );
     }
 
