@@ -1,5 +1,6 @@
-package org.jnaalisv.sqlmapper;
+package org.jnaalisv.sqlmapper.integrationtests;
 
+import org.jnaalisv.sqlmapper.SqlQueries;
 import org.jnaalisv.sqlmapper.entities.Product;
 import org.jnaalisv.sqlmapper.spring.DataSourceConfig;
 import org.junit.Before;
@@ -36,7 +37,7 @@ public class SqlQueriesTest {
 
     @Before
     public void setDataSource() {
-        sqlQueries = new SqlQueries(new SqlExecutor(dataSource));
+        sqlQueries = new SqlQueries(dataSource);
     }
 
     @Test

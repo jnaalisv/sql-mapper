@@ -17,7 +17,7 @@
 package com.zaxxer.sansorm.internal;
 
 import org.jnaalisv.sqlmapper.CachingSqlStringBuilder;
-import org.jnaalisv.sqlmapper.SqlExecutor;
+import org.jnaalisv.sqlmapper.SqlQueries;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
 import java.sql.Connection;
@@ -28,7 +28,7 @@ public class OrmWriter {
     public static <T> int insertObject(Connection connection, T target) throws Exception {
         Introspected introspected = Introspector.getIntrospected(target.getClass());
 
-        return SqlExecutor.prepareStatementForInsert(
+        return SqlQueries.prepareStatementForInsert(
                 connection,
                 () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
                 introspected.getGeneratedIdColumnNames(),
@@ -40,7 +40,7 @@ public class OrmWriter {
 
         Introspected introspected = Introspector.getIntrospected(target.getClass());
 
-        return SqlExecutor.prepareStatement(
+        return SqlQueries.prepareStatement(
                 connection,
                 () -> CachingSqlStringBuilder.createStatementForUpdateSql(introspected),
                 preparedStatement -> StatementWrapper.update(preparedStatement, introspected, target)
@@ -51,7 +51,7 @@ public class OrmWriter {
 
         String sql = CachingSqlStringBuilder.deleteObjectByIdSql(Introspector.getIntrospected(clazz));
 
-        return SqlExecutor.prepareStatement(
+        return SqlQueries.prepareStatement(
                 connection,
                 () -> sql,
                 PreparedStatement::executeUpdate,

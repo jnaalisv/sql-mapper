@@ -2,22 +2,114 @@ package org.jnaalisv.sqlmapper;
 
 import com.zaxxer.sansorm.internal.Introspected;
 import com.zaxxer.sansorm.internal.Introspector;
+import org.jnaalisv.sqlmapper.internal.ConnectionConsumer;
+import org.jnaalisv.sqlmapper.internal.FailFastResourceProxy;
+import org.jnaalisv.sqlmapper.internal.PreparedStatementConsumer;
+import org.jnaalisv.sqlmapper.internal.ResultSetConsumer;
 import org.jnaalisv.sqlmapper.internal.ResultSetToolBox;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
 public class SqlQueries {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlQueries.class);
 
-    private SqlExecutor sqlExecutor;
+    private final DataSource dataSource;
 
-    public SqlQueries(SqlExecutor sqlExecutor) {
-        this.sqlExecutor = sqlExecutor;
+    public SqlQueries(final DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    public final <T> T getConnection(ConnectionConsumer<T> connectionConsumer) {
+        LOGGER.debug("getConnection");
+        try (Connection connection = FailFastResourceProxy.wrap(dataSource.getConnection(), Connection.class) ) {
+            return connectionConsumer.consume(connection);
+        }
+        catch (SQLException e) {
+            if (e.getNextException() != null) {
+                e = e.getNextException();
+            }
+            LOGGER.debug("SQLException ", e);
+            throw new RuntimeException(e);
+        }
+        catch (Exception e) {
+            LOGGER.debug("Exception ", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T prepareStatement(Connection connection, Callable<String> sqlBuilder, PreparedStatementConsumer<T> preparedStatementConsumer, Object... args) throws Exception {
+        String sql = sqlBuilder.call();
+        LOGGER.debug("prepareStatement "+ sql);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql) ) {
+
+            if (args.length != 0 ) {
+                StatementWrapper.populateStatementParameters(preparedStatement, args);
+            }
+
+            return preparedStatementConsumer.consume(preparedStatement);
+        }
+    }
+
+    public static <T> T prepareStatementForInsert(Connection connection, Callable<String> sqlBuilder, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) throws Exception {
+        String sql = sqlBuilder.call();
+        LOGGER.debug("prepareStatementForInsert "+ sql);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql, returnColumns) ) {
+            return preparedStatementConsumer.consume(preparedStatement);
+        }
+    }
+
+    public static <T> T executeStatement(PreparedStatement preparedStatement, ResultSetConsumer<T> resultSetConsumer) throws Exception {
+        try (ResultSet resultSet = preparedStatement.executeQuery()) {
+            return resultSetConsumer.consume(resultSet);
+        }
+    }
+
+    // ---------------- //
+    // Public Interface //
+    // ---------------- //
+
+    public <T> T execute(Callable<String> sqlProducer, ResultSetConsumer<T> resultSetConsumer, Object... args) {
+        return getConnection(
+                conn -> prepareStatement(
+                        conn,
+                        sqlProducer,
+                        stmt -> executeStatement(stmt, resultSetConsumer),
+                        args
+                )
+        );
+    }
+
+    public <T> T executeInsert(Callable<String> sqlProducer, String[] returnColumns, PreparedStatementConsumer<T> preparedStatementConsumer) {
+        return getConnection(
+                conn -> prepareStatementForInsert(
+                        conn,
+                        sqlProducer,
+                        returnColumns,
+                        preparedStatementConsumer
+                )
+        );
+    }
+
+    public <T> T executeUpdate(Callable<String> sqlProducer, PreparedStatementConsumer<T> preparedStatementConsumer, Object...args) {
+        return getConnection(
+                conn -> prepareStatement(
+                        conn,
+                        sqlProducer,
+                        preparedStatementConsumer,
+                        args
+                )
+        );
     }
 
     // -------------------- //
@@ -25,14 +117,14 @@ public class SqlQueries {
     // -------------------- //
 
     public final <T> List<T> list(Class<T> entityClass) {
-        return sqlExecutor.execute(
+        return execute(
                 () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), null),
                 resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass)
         );
     }
 
     public final <T> List<T> queryForList(Class<T> entityClass, String sql, Object... args) {
-        return sqlExecutor.execute(
+        return execute(
                 () -> sql,
                 resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
                 args
@@ -40,7 +132,7 @@ public class SqlQueries {
     }
 
     public final <T> List<T> queryForList(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
-        return sqlExecutor.execute(
+        return execute(
                 sqlProducer,
                 resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
                 args
@@ -56,7 +148,7 @@ public class SqlQueries {
     }
 
     public <T> List<T> executeQuery(Class<T> entityClass, final String sql, final Object... args) {
-        return sqlExecutor.execute(
+        return execute(
                 () -> sql,
                 resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
                 args
@@ -69,7 +161,7 @@ public class SqlQueries {
     // -------------------- //
 
     public final <T> Optional<T> query(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
-        return sqlExecutor.execute(
+        return execute(
                 sqlProducer,
                 resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
                 args
@@ -77,7 +169,7 @@ public class SqlQueries {
     }
 
     public <T> Optional<T> getObjectById(Class<T> entityClass, Object... ids) {
-        return sqlExecutor.execute(
+        return execute(
                 () -> CachingSqlStringBuilder.getObjectByIdSql(entityClass),
                 resultSet -> ResultSetToolBox.resultSetToObject(resultSet, entityClass),
                 ids
@@ -105,7 +197,7 @@ public class SqlQueries {
     // -------------------- //
 
     public Optional<Number> numberFromSql(Callable<String> sqlProducer, Object... args) {
-        return sqlExecutor.execute(
+        return execute(
                 sqlProducer,
                 resultSet -> {
                     if (resultSet.next()) {
@@ -133,7 +225,7 @@ public class SqlQueries {
     // -------------------- //
 
     public <T> int insertObject(T object) {
-        return sqlExecutor.getConnection(
+        return getConnection(
                 connection -> {
 
                     Introspected introspected = Introspector.getIntrospected(object.getClass());
@@ -156,7 +248,7 @@ public class SqlQueries {
         Introspected introspected = Introspector.getIntrospected(iterableIterator.next().getClass());
         String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
-        return SqlExecutor.prepareStatementForInsert(
+        return prepareStatementForInsert(
                 connection,
                 () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
                 returnColumns,
@@ -171,7 +263,7 @@ public class SqlQueries {
     }
 
     public <T> int[] insertListBatched(Iterable<T> iterable) {
-        return sqlExecutor.getConnection(connection -> insertListBatched(connection, iterable));
+        return getConnection(connection -> insertListBatched(connection, iterable));
     }
 
     public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws Exception {
@@ -185,7 +277,7 @@ public class SqlQueries {
         Introspected introspected = Introspector.getIntrospected(target.getClass());
         String[] returnColumns = introspected.getGeneratedIdColumnNames();
 
-        return SqlExecutor.prepareStatementForInsert(
+        return prepareStatementForInsert(
                 connection,
                 () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
                 returnColumns,
@@ -200,7 +292,7 @@ public class SqlQueries {
     }
 
     public <T> int insertListNotBatched(Iterable<T> iterable) {
-        return sqlExecutor.getConnection(connection -> insertListNotBatched(connection, iterable));
+        return getConnection(connection -> insertListNotBatched(connection, iterable));
     }
 
     // -------------------- //
@@ -208,7 +300,7 @@ public class SqlQueries {
     // -------------------- //
 
     public <T> int updateObject(T target) {
-        return sqlExecutor.executeUpdate(
+        return executeUpdate(
                 () -> CachingSqlStringBuilder.createStatementForUpdateSql(Introspector.getIntrospected(target.getClass())),
                 preparedStatement -> StatementWrapper.update(
                         preparedStatement,
@@ -222,7 +314,7 @@ public class SqlQueries {
     // -------------------- //
 
     public <T> int deleteObjectById(Class<T> clazz, Object... args) {
-        return sqlExecutor.executeUpdate(
+        return executeUpdate(
                 () -> CachingSqlStringBuilder.deleteObjectByIdSql(Introspector.getIntrospected(clazz)),
                 PreparedStatement::executeUpdate,
                 args
@@ -239,7 +331,7 @@ public class SqlQueries {
             throw new RuntimeException(e);
         }
 
-        return sqlExecutor.executeUpdate(
+        return executeUpdate(
                 () -> CachingSqlStringBuilder.deleteObjectByIdSql(Introspector.getIntrospected(clazz)),
                 PreparedStatement::executeUpdate,
                 objectIds
