@@ -20,6 +20,10 @@ public class SqlQueries {
         this.sqlExecutor = sqlExecutor;
     }
 
+    // -------------------- //
+    //     List Queries     //
+    // -------------------- //
+
     public final <T> List<T> list(Class<T> entityClass) {
         return sqlExecutor.execute(
                 () -> CachingSqlStringBuilder.generateSelectFromClause(Introspector.getIntrospected(entityClass), null),
@@ -27,7 +31,7 @@ public class SqlQueries {
         );
     }
 
-    public <T> List<T> queryForList(Class<T> entityClass, String sql, Object... args) {
+    public final <T> List<T> queryForList(Class<T> entityClass, String sql, Object... args) {
         return sqlExecutor.execute(
                 () -> sql,
                 resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
@@ -50,6 +54,19 @@ public class SqlQueries {
                 args
         );
     }
+
+    public <T> List<T> executeQuery(Class<T> entityClass, final String sql, final Object... args) {
+        return sqlExecutor.execute(
+                () -> sql,
+                resultSet -> ResultSetToolBox.resultSetToList(resultSet, entityClass),
+                args
+
+        );
+    }
+
+    // -------------------- //
+    //    Object Queries    //
+    // -------------------- //
 
     public final <T> Optional<T> query(Callable<String> sqlProducer, Class<T> entityClass, Object... args) {
         return sqlExecutor.execute(
@@ -83,6 +100,10 @@ public class SqlQueries {
         );
     }
 
+    // -------------------- //
+    //    Number Queries    //
+    // -------------------- //
+
     public Optional<Number> numberFromSql(Callable<String> sqlProducer, Object... args) {
         return sqlExecutor.execute(
                 sqlProducer,
@@ -107,6 +128,10 @@ public class SqlQueries {
                 .intValue();
     }
 
+    // -------------------- //
+    //  Insert Statements   //
+    // -------------------- //
+
     public <T> int insertObject(T object) {
         return sqlExecutor.getConnection(
                 connection -> {
@@ -119,16 +144,6 @@ public class SqlQueries {
                         return StatementWrapper.insert(preparedStatement, introspected, object);
                     }
                 }
-        );
-    }
-
-    public <T> int updateObject(T target) {
-        return sqlExecutor.executeUpdate(
-                () -> CachingSqlStringBuilder.createStatementForUpdateSql(Introspector.getIntrospected(target.getClass())),
-                preparedStatement -> StatementWrapper.update(
-                        preparedStatement,
-                        Introspector.getIntrospected(target.getClass()),
-                        target)
         );
     }
 
@@ -187,6 +202,24 @@ public class SqlQueries {
     public <T> int insertListNotBatched(Iterable<T> iterable) {
         return sqlExecutor.getConnection(connection -> insertListNotBatched(connection, iterable));
     }
+
+    // -------------------- //
+    //  Update Statements   //
+    // -------------------- //
+
+    public <T> int updateObject(T target) {
+        return sqlExecutor.executeUpdate(
+                () -> CachingSqlStringBuilder.createStatementForUpdateSql(Introspector.getIntrospected(target.getClass())),
+                preparedStatement -> StatementWrapper.update(
+                        preparedStatement,
+                        Introspector.getIntrospected(target.getClass()),
+                        target)
+        );
+    }
+
+    // -------------------- //
+    //  Delete Statements   //
+    // -------------------- //
 
     public <T> int deleteObjectById(Class<T> clazz, Object... args) {
         return sqlExecutor.executeUpdate(

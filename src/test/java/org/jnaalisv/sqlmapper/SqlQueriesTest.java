@@ -227,4 +227,26 @@ public class SqlQueriesTest {
 
         assertThat(rowCount).isEqualTo(0);
     }
+
+
+    @Test
+    public void executeQuery() {
+        List<Product> products = sqlQueries.executeQuery(Product.class, "select id, product_code from products");
+        assertThat(products.size()).isEqualTo(3);
+
+        products = sqlQueries.executeQuery(Product.class, "select id, product_code from products where id < 0");
+        assertThat(products.size()).isEqualTo(0);
+    }
+
+    @Test
+    public void executeQueryError() {
+
+        Throwable thrown = catchThrowable(() -> sqlQueries.executeQuery(Product.class, "INVALID"));
+
+        assertThat(thrown)
+                .isInstanceOf(RuntimeException.class)
+                .hasCauseInstanceOf(SQLException.class)
+                .hasMessageContaining("Syntax error in SQL statement");
+
+    }
 }
