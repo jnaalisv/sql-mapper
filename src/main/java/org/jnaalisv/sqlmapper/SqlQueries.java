@@ -158,4 +158,33 @@ public class SqlQueries {
     public <T> int[] insertListBatched(Iterable<T> iterable) {
         return sqlExecutor.getConnection(connection -> insertListBatched(connection, iterable));
     }
+
+    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws Exception {
+        Iterator<T> iterableIterator = iterable.iterator();
+        if (!iterableIterator.hasNext()) {
+            return 0;
+        }
+
+        T target = iterableIterator.next();
+
+        Introspected introspected = Introspector.getIntrospected(target.getClass());
+        String[] returnColumns = introspected.getGeneratedIdColumnNames();
+
+        return SqlExecutor.prepareStatementForInsert(
+                connection,
+                () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
+                returnColumns,
+                preparedStatement -> {
+                    StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
+                    for (T item : iterable) {
+                        statementWrapper.insert(introspected, item);
+                    }
+                    return statementWrapper.getTotalRowCount();
+                }
+        );
+    }
+
+    public <T> int insertListNotBatched(Iterable<T> iterable) {
+        return sqlExecutor.getConnection(connection -> insertListNotBatched(connection, iterable));
+    }
 }

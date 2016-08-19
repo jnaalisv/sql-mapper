@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -145,5 +146,47 @@ public class SqlQueriesTest {
         assertThat(newlyFetchedProductA1.getId()).isEqualTo(originalId);
 
         assertThat(newlyFetchedProductA1.getProductCode()).isEqualTo("AA11");
+    }
+
+    @Test
+    public void insertListBatched() {
+
+        List<Product> products = Arrays.asList(new Product("Q1"), new Product("W2"), new Product("E3"));
+
+        int[] rowCounts = sqlQueries.insertListBatched(products);
+
+        assertThat(rowCounts.length).isEqualTo(3);
+
+        assertThat(rowCounts[0]).isEqualTo(1);
+        assertThat(rowCounts[1]).isEqualTo(1);
+        assertThat(rowCounts[2]).isEqualTo(1);
+
+        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "Q1").get();
+        assertThat(product.getProductCode()).isEqualTo("Q1");
+
+        product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "W2").get();
+        assertThat(product.getProductCode()).isEqualTo("W2");
+
+        product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "E3").get();
+        assertThat(product.getProductCode()).isEqualTo("E3");
+    }
+
+    @Test
+    public void insertListNotBatched() {
+
+        List<Product> products = Arrays.asList(new Product("Q1"), new Product("W2"), new Product("E3"));
+
+        int rowCount = sqlQueries.insertListNotBatched(products);
+
+        assertThat(rowCount).isEqualTo(3);
+
+        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "Q1").get();
+        assertThat(product.getProductCode()).isEqualTo("Q1");
+
+        product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "W2").get();
+        assertThat(product.getProductCode()).isEqualTo("W2");
+
+        product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "E3").get();
+        assertThat(product.getProductCode()).isEqualTo("E3");
     }
 }

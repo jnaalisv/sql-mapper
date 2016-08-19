@@ -21,7 +21,6 @@ import org.jnaalisv.sqlmapper.SqlExecutor;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
 import java.sql.Connection;
-import java.util.Iterator;
 
 public class OrmWriter {
 
@@ -52,31 +51,6 @@ public class OrmWriter {
             StatementWrapper.populateStatementParameters(preparedStatement, args);
             return preparedStatement.executeUpdate();
         });
-    }
-
-    public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws Exception {
-        Iterator<T> iterableIterator = iterable.iterator();
-        if (!iterableIterator.hasNext()) {
-            return 0;
-        }
-
-        T target = iterableIterator.next();
-
-        Introspected introspected = Introspector.getIntrospected(target.getClass());
-        String[] returnColumns = introspected.getGeneratedIdColumnNames();
-
-        return SqlExecutor.prepareStatementForInsert(
-                connection,
-                () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
-                returnColumns,
-                preparedStatement -> {
-                    StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
-                    for (T item : iterable) {
-                        statementWrapper.insert(introspected, item);
-                    }
-                    return statementWrapper.getTotalRowCount();
-                }
-        );
     }
 
     public static <T> int deleteObjectById(Connection connection, Class<T> clazz, Object... args) throws Exception {

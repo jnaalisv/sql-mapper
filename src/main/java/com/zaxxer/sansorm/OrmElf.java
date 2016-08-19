@@ -130,7 +130,7 @@ public final class OrmElf {
      * @throws SQLException if a {@link SQLException} occurs
      */
     public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws Exception {
-        return OrmWriter.insertListNotBatched(connection, iterable);
+        return SqlQueries.insertListNotBatched(connection, iterable);
     }
 
     /**

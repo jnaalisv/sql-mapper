@@ -82,7 +82,7 @@ public class OldSqlWrapper {
     }
 
     public <T> int insertListNotBatched(Iterable<T> iterable) {
-        return execute(connection -> OrmWriter.insertListNotBatched(connection, iterable));
+        return execute(connection -> SqlQueries.insertListNotBatched(connection, iterable));
     }
 
     public <T> List<T> executeQuery(Class<T> entityClass, final String sql, final Object... args) {
