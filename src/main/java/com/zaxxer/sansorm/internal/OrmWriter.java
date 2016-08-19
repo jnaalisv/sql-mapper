@@ -54,31 +54,6 @@ public class OrmWriter {
         });
     }
 
-    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws Exception {
-        Iterator<T> iterableIterator = iterable.iterator();
-        if (!iterableIterator.hasNext()) {
-            return new int[]{};
-        }
-
-        T target = iterableIterator.next();
-
-        Introspected introspected = Introspector.getIntrospected(target.getClass());
-        String[] returnColumns = introspected.getGeneratedIdColumnNames();
-
-        return SqlExecutor.prepareStatementForInsert(
-                connection,
-                () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
-                returnColumns,
-                preparedStatement -> {
-                    StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
-                    for (T item : iterable) {
-                        statementWrapper.addBatch(introspected, item);
-                    }
-                    return statementWrapper.executeBatch();
-                }
-        );
-    }
-
     public static <T> int insertListNotBatched(Connection connection, Iterable<T> iterable) throws Exception {
         Iterator<T> iterableIterator = iterable.iterator();
         if (!iterableIterator.hasNext()) {

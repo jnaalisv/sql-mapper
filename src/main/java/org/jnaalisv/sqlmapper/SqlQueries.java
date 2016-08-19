@@ -5,7 +5,9 @@ import com.zaxxer.sansorm.internal.Introspector;
 import org.jnaalisv.sqlmapper.internal.ResultSetToolBox;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -128,5 +130,32 @@ public class SqlQueries {
                         Introspector.getIntrospected(target.getClass()),
                         target)
         );
+    }
+
+    public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws Exception {
+        Iterator<T> iterableIterator = iterable.iterator();
+        if (!iterableIterator.hasNext()) {
+            return new int[]{};
+        }
+
+        Introspected introspected = Introspector.getIntrospected(iterableIterator.next().getClass());
+        String[] returnColumns = introspected.getGeneratedIdColumnNames();
+
+        return SqlExecutor.prepareStatementForInsert(
+                connection,
+                () -> CachingSqlStringBuilder.createStatementForInsertSql(introspected),
+                returnColumns,
+                preparedStatement -> {
+                    StatementWrapper statementWrapper = new StatementWrapper(preparedStatement);
+                    for (T item : iterable) {
+                        statementWrapper.addBatch(introspected, item);
+                    }
+                    return statementWrapper.executeBatch();
+                }
+        );
+    }
+
+    public <T> int[] insertListBatched(Iterable<T> iterable) {
+        return sqlExecutor.getConnection(connection -> insertListBatched(connection, iterable));
     }
 }

@@ -3,6 +3,7 @@ package org.jnaalisv.sqlmapper.internal;
 import com.zaxxer.sansorm.SqlFunction;
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
+import org.jnaalisv.sqlmapper.SqlQueries;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -77,7 +78,7 @@ public class OldSqlWrapper {
     }
 
     public <T> int[] insertListBatched(Iterable<T> iterable) {
-        return execute(connection -> OrmWriter.insertListBatched(connection, iterable));
+        return execute(connection -> SqlQueries.insertListBatched(connection, iterable));
     }
 
     public <T> int insertListNotBatched(Iterable<T> iterable) {

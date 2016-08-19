@@ -18,6 +18,7 @@ package com.zaxxer.sansorm;
 
 import com.zaxxer.sansorm.internal.OrmReader;
 import com.zaxxer.sansorm.internal.OrmWriter;
+import org.jnaalisv.sqlmapper.SqlQueries;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -141,7 +142,7 @@ public final class OrmElf {
      * @throws SQLException if a {@link SQLException} occurs
      */
     public static <T> int[] insertListBatched(Connection connection, Iterable<T> iterable) throws Exception {
-        return OrmWriter.insertListBatched(connection, iterable);
+        return SqlQueries.insertListBatched(connection, iterable);
     }
 
     /**
