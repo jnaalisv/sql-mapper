@@ -187,4 +187,29 @@ public class SqlQueries {
     public <T> int insertListNotBatched(Iterable<T> iterable) {
         return sqlExecutor.getConnection(connection -> insertListNotBatched(connection, iterable));
     }
+
+    public <T> int deleteObjectById(Class<T> clazz, Object... args) {
+        return sqlExecutor.executeUpdate(
+                () -> CachingSqlStringBuilder.deleteObjectByIdSql(Introspector.getIntrospected(clazz)),
+                PreparedStatement::executeUpdate,
+                args
+        );
+    }
+
+    public <T> int deleteObject(T object, Class<T> clazz) {
+
+        Object[] objectIds = null;
+
+        try {
+            objectIds = Introspector.getIntrospected(clazz).getActualIds(object);
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+
+        return sqlExecutor.executeUpdate(
+                () -> CachingSqlStringBuilder.deleteObjectByIdSql(Introspector.getIntrospected(clazz)),
+                PreparedStatement::executeUpdate,
+                objectIds
+        );
+    }
 }

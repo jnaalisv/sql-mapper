@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
@@ -188,5 +189,42 @@ public class SqlQueriesTest {
 
         product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "E3").get();
         assertThat(product.getProductCode()).isEqualTo("E3");
+    }
+
+    @Test
+    public void deleteObject() {
+        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+
+        int rowCount = sqlQueries.deleteObject(product, Product.class);
+
+        assertThat(rowCount).isEqualTo(1);
+
+        List<Product> products = sqlQueries.listFromClause(Product.class, "id > ?", 0l);
+        assertThat(products.size()).isEqualTo(2);
+        assertThat(products.stream().map(Product::getId).collect(Collectors.toList())).doesNotContain(product.getId());
+    }
+
+    @Test
+    public void deleteObjectById() {
+        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+
+        int rowCount = sqlQueries.deleteObjectById(Product.class, product.getId());
+
+        assertThat(rowCount).isEqualTo(1);
+
+        List<Product> products = sqlQueries.listFromClause(Product.class, "id > ?", 0l);
+        assertThat(products.size()).isEqualTo(2);
+
+        assertThat(products.stream().map(Product::getId).collect(Collectors.toList())).doesNotContain(product.getId());
+    }
+
+
+    @Test
+    public void deleteObjectByIdReturnZero() {
+        Product product = sqlQueries.objectFromClause(Product.class, "product_code = ?", "A1").get();
+
+        int rowCount = sqlQueries.deleteObjectById(Product.class, -1l);
+
+        assertThat(rowCount).isEqualTo(0);
     }
 }
