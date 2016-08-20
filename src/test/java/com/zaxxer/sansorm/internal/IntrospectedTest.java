@@ -1,5 +1,6 @@
 package com.zaxxer.sansorm.internal;
 
+import org.jnaalisv.sqlmapper.entities.Customer;
 import org.jnaalisv.sqlmapper.entities.Product;
 import org.junit.Test;
 
@@ -47,6 +48,33 @@ public class IntrospectedTest {
 
         String[] columnTableNames = introspectedProduct.getColumnTableNames();
         assertThat(columnTableNames).containsExactly(null, null, null, null, null, null, null);
+    }
+
+    @Test
+    public void testVersionedEntity() throws IllegalAccessException, InstantiationException {
+        Introspected introspectedCustomer = Introspector.getIntrospected(Customer.class);
+
+        assertThat(introspectedCustomer.hasVersionColumn()).isTrue();
+
+        String versionColumnName = introspectedCustomer.getVersionColumnName();
+        assertThat(versionColumnName).isEqualTo("version");
+
+        String[] columnNames = introspectedCustomer.getColumnNames();
+        assertThat(columnNames).containsExactly("id",
+                "version",
+                "name");
+
+        String[] updatableColumns = introspectedCustomer.getUpdatableColumns();
+        assertThat(updatableColumns).containsExactly("name");
+
+        String[] insertableColumns = introspectedCustomer.getInsertableColumns();
+        assertThat(insertableColumns).containsExactly("name");
+
+        String[] idColumnNames = introspectedCustomer.getIdColumnNames();
+        assertThat(idColumnNames).containsExactly("id");
+
+        String[] columnTableNames = introspectedCustomer.getColumnTableNames();
+        assertThat(columnTableNames).containsExactly(null, null, null);
     }
 
 }

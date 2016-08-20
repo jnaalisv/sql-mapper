@@ -20,15 +20,7 @@ import org.jnaalisv.sqlmapper.internal.TableSpecs;
 import org.jnaalisv.sqlmapper.internal.TypeMapper;
 import org.postgresql.util.PGobject;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -58,6 +50,7 @@ public class Introspected implements TableSpecs {
 
     private FieldColumnInfo[] idFieldColumnInfos;
     private String[] idColumnNames;
+    private String versionColumnName;
     private String[] columnNames;
     private String[] columnTableNames;
     private String[] columnsSansIds;
@@ -85,8 +78,13 @@ public class Introspected implements TableSpecs {
 
             processColumnAnnotation(fcInfo);
 
+
             Id idAnnotation = field.getAnnotation(Id.class);
-            if (idAnnotation != null) {
+            Version versionAnnotation = field.getAnnotation(Version.class);
+
+            if (versionAnnotation != null) {
+                this.versionColumnName = field.getName().toLowerCase();
+            } else if (idAnnotation != null) {
                 // Is it a problem that Class.getDeclaredFields() claims the fields are returned unordered?  We count on order.
                 idFcInfos.add(fcInfo);
                 GeneratedValue generatedAnnotation = field.getAnnotation(GeneratedValue.class);
@@ -201,6 +199,16 @@ public class Introspected implements TableSpecs {
 
     public boolean hasGeneratedId() {
         return isGeneratedId;
+    }
+
+    @Override
+    public boolean hasVersionColumn() {
+        return versionColumnName != null;
+    }
+
+    @Override
+    public String getVersionColumnName() {
+        return versionColumnName;
     }
 
     public String[] getInsertableColumns() {

@@ -1,6 +1,8 @@
 package org.jnaalisv.sqlmapper;
 
+import com.zaxxer.sansorm.internal.Introspected;
 import com.zaxxer.sansorm.internal.Introspector;
+import org.jnaalisv.sqlmapper.entities.Customer;
 import org.jnaalisv.sqlmapper.entities.Product;
 import org.jnaalisv.sqlmapper.internal.TableSpecs;
 import org.junit.Before;
@@ -55,5 +57,35 @@ public class SqlStringBuilderTest {
                 "products.unit_price," +
                 "products.introduced," +
                 "products.last_modified");
+    }
+
+    @Test
+    public void insertVersionedSql() throws IllegalAccessException, InstantiationException {
+
+        Introspected introspectedCustomer = Introspector.getIntrospected(Customer.class);
+
+        String sql = SqlStringBuilder.createStatementForInsertSql(introspectedCustomer);
+
+        assertThat(sql).isEqualTo("INSERT INTO customers(name) VALUES (?)");
+    }
+
+    @Test
+    public void updateVersionedSql() throws IllegalAccessException, InstantiationException {
+
+        Introspected introspectedCustomer = Introspector.getIntrospected(Customer.class);
+
+        String sql = SqlStringBuilder.createStatementForUpdateSql(introspectedCustomer);
+
+        assertThat(sql).isEqualTo("UPDATE customers SET name=? WHERE id=? AND version=?");
+    }
+
+    @Test
+    public void deleteVersionedSql() throws IllegalAccessException, InstantiationException {
+
+        Introspected introspectedCustomer = Introspector.getIntrospected(Customer.class);
+
+        String sql = SqlStringBuilder.deleteObjectByIdSql(introspectedCustomer);
+
+        assertThat(sql).isEqualTo("DELETE FROM customers WHERE id=? AND version=?");
     }
 }

@@ -15,4 +15,7 @@ public interface TableSpecs {
     String[] getInsertableColumns();
     boolean hasGeneratedId();
 
+    boolean hasVersionColumn();
+    String getVersionColumnName();
+
 }

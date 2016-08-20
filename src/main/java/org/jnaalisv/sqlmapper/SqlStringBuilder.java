@@ -132,7 +132,14 @@ public final class SqlStringBuilder {
             for (String column : idColumnNames) {
                 sqlSB.append(column).append("=? AND ");
             }
-            sqlSB.setLength(sqlSB.length() - 5);
+
+            if (tableSpecs.hasVersionColumn()) {
+                sqlSB
+                        .append(tableSpecs.getVersionColumnName())
+                        .append("=?");
+            } else {
+                sqlSB.setLength(sqlSB.length() - 5);
+            }
         }
 
         return sqlSB.toString();
@@ -163,7 +170,13 @@ public final class SqlStringBuilder {
         for (String idColumn : tableSpecs.getIdColumnNames()) {
             sql.append(idColumn).append("=? AND ");
         }
-        sql.setLength(sql.length() - 5);
+
+        if (tableSpecs.hasVersionColumn()) {
+            sql.append(tableSpecs.getVersionColumnName())
+                    .append("=?");
+        } else {
+            sql.setLength(sql.length() - 5);
+        }
         return sql.toString();
     }
 

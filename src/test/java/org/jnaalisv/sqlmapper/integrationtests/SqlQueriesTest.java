@@ -1,6 +1,7 @@
 package org.jnaalisv.sqlmapper.integrationtests;
 
 import org.jnaalisv.sqlmapper.SqlQueries;
+import org.jnaalisv.sqlmapper.entities.Customer;
 import org.jnaalisv.sqlmapper.entities.Product;
 import org.jnaalisv.sqlmapper.spring.DataSourceConfig;
 import org.junit.Before;
@@ -249,5 +250,21 @@ public class SqlQueriesTest {
                 .hasCauseInstanceOf(SQLException.class)
                 .hasMessageContaining("Syntax error in SQL statement");
 
+    }
+
+    @Test
+    public void updateShouldIncreaseVersion() {
+
+        List<Customer> customers = sqlQueries.queryAll(Customer.class);
+        Customer onlyCustomer = customers.get(0);
+        onlyCustomer.setName("Name Changed!");
+
+        long oldVersion = onlyCustomer.getVersion();
+
+        int rowCount = sqlQueries.updateObject(onlyCustomer);
+
+        assertThat(rowCount).isEqualTo(1);
+
+        assertThat(onlyCustomer.getVersion()).isEqualTo(oldVersion + 1);
     }
 }
