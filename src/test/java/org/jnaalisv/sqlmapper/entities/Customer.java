@@ -15,10 +15,17 @@ public class Customer {
     private long id;
 
     @Version
+    @Column(name = "version")
     private long version = 0l;
 
     @Column(name = "name")
     private String name;
+
+    public Customer() {}
+
+    public Customer(String name) {
+        this.name = name;
+    }
 
     public void setName(String name) {
         this.name = name;
@@ -26,5 +33,9 @@ public class Customer {
 
     public long getVersion() {
         return version;
+    }
+
+    public long getId() {
+        return id;
     }
 }

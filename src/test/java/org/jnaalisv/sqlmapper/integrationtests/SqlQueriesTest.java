@@ -3,6 +3,7 @@ package org.jnaalisv.sqlmapper.integrationtests;
 import org.jnaalisv.sqlmapper.SqlQueries;
 import org.jnaalisv.sqlmapper.entities.Customer;
 import org.jnaalisv.sqlmapper.entities.Product;
+import org.jnaalisv.sqlmapper.internal.VersionConflictException;
 import org.jnaalisv.sqlmapper.spring.DataSourceConfig;
 import org.junit.Before;
 import org.junit.Test;
@@ -262,9 +263,37 @@ public class SqlQueriesTest {
         long oldVersion = onlyCustomer.getVersion();
 
         int rowCount = sqlQueries.updateObject(onlyCustomer);
-
         assertThat(rowCount).isEqualTo(1);
 
         assertThat(onlyCustomer.getVersion()).isEqualTo(oldVersion + 1);
     }
+
+    @Test
+    public void testVersionConflict() {
+
+        Customer firstReference = sqlQueries.queryAll(Customer.class).get(0);
+        Customer secondReference = sqlQueries.queryAll(Customer.class).get(0);
+
+        int rowCount = sqlQueries.updateObject(firstReference);
+        assertThat(rowCount).isEqualTo(1);
+
+        Throwable thrown = catchThrowable(() -> sqlQueries.updateObject(secondReference));
+
+        assertThat(thrown)
+                .isInstanceOf(RuntimeException.class)
+                .hasCauseInstanceOf(VersionConflictException.class);
+
+    }
+
+    @Test
+    public void insertingNewEntityShouldInitVersionToZero() {
+        Customer newCustomer = new Customer("new");
+
+        int rowCount = sqlQueries.insertObject(newCustomer);
+        assertThat(rowCount).isEqualTo(1);
+        assertThat(newCustomer.getId()).isGreaterThan(0l);
+        assertThat(newCustomer.getVersion()).isEqualTo(0l);
+    }
+
+
 }

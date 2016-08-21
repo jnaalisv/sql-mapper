@@ -361,6 +361,18 @@ public class Introspected implements TableSpecs {
         }
     }
 
+    public boolean isPersisted(Object target) throws IllegalAccessException {
+        if (this.hasGeneratedId()) {
+            Long id = (Long) this.get(target, this.getGeneratedIdColumnNames()[0]);
+            return id != null && id > 0l;
+        }
+        return false;
+    }
+
+    public long getIdColumnValue(Object target) throws IllegalAccessException {
+        return (long) this.get(target, this.getGeneratedIdColumnNames()[0]);
+    }
+
     private static class FieldColumnInfo {
         private boolean updatable;
         private boolean insertable;

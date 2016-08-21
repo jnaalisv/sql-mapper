@@ -66,7 +66,7 @@ public class SqlStringBuilderTest {
 
         String sql = SqlStringBuilder.createStatementForInsertSql(introspectedCustomer);
 
-        assertThat(sql).isEqualTo("INSERT INTO customers(name) VALUES (?)");
+        assertThat(sql).isEqualTo("INSERT INTO customers(version,name) VALUES (?,?)");
     }
 
     @Test
@@ -76,7 +76,7 @@ public class SqlStringBuilderTest {
 
         String sql = SqlStringBuilder.createStatementForUpdateSql(introspectedCustomer);
 
-        assertThat(sql).isEqualTo("UPDATE customers SET name=? WHERE id=? AND version=?");
+        assertThat(sql).isEqualTo("UPDATE customers SET version=?,name=? WHERE id=? AND version=?");
     }
 
     @Test

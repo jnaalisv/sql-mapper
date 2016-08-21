@@ -65,10 +65,10 @@ public class IntrospectedTest {
                 "name");
 
         String[] updatableColumns = introspectedCustomer.getUpdatableColumns();
-        assertThat(updatableColumns).containsExactly("name");
+        assertThat(updatableColumns).containsExactly("version", "name");
 
         String[] insertableColumns = introspectedCustomer.getInsertableColumns();
-        assertThat(insertableColumns).containsExactly("name");
+        assertThat(insertableColumns).containsExactly("version", "name");
 
         String[] idColumnNames = introspectedCustomer.getIdColumnNames();
         assertThat(idColumnNames).containsExactly("id");
