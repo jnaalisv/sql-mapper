@@ -279,9 +279,7 @@ public class SqlQueriesTest {
 
         Throwable thrown = catchThrowable(() -> sqlQueries.updateObject(secondReference));
 
-        assertThat(thrown)
-                .isInstanceOf(RuntimeException.class)
-                .hasCauseInstanceOf(VersionConflictException.class);
+        assertThat(thrown).isInstanceOf(VersionConflictException.class);
 
     }
 

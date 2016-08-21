@@ -7,6 +7,7 @@ import org.jnaalisv.sqlmapper.internal.PreparedStatementConsumer;
 import org.jnaalisv.sqlmapper.internal.ResultSetConsumer;
 import org.jnaalisv.sqlmapper.internal.ResultSetToolBox;
 import org.jnaalisv.sqlmapper.internal.StatementWrapper;
+import org.jnaalisv.sqlmapper.internal.VersionConflictException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,10 @@ public class SqlQueries {
             }
             LOGGER.debug("SQLException ", e);
             throw new RuntimeException(e);
+        }
+        catch (VersionConflictException vce) {
+            LOGGER.debug("VersionConflictException ", vce);
+            throw vce;
         }
         catch (Exception e) {
             LOGGER.debug("Exception ", e);
