@@ -18,7 +18,6 @@ package com.zaxxer.sansorm.internal;
 
 import org.jnaalisv.sqlmapper.internal.TableSpecs;
 import org.jnaalisv.sqlmapper.internal.TypeMapper;
-import org.postgresql.util.PGobject;
 
 import javax.persistence.*;
 import java.io.IOException;
@@ -33,11 +32,8 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -46,17 +42,9 @@ public class Introspected implements TableSpecs {
 
     private Map<String, FieldColumnInfo> columnToField = new LinkedHashMap<>();
 
-    private boolean isGeneratedId;
-
-    private FieldColumnInfo[] idFieldColumnInfos;
     private String[] idColumnNames;
-    private String versionColumnName;
     private String[] columnNames;
     private String[] columnTableNames;
-    private String[] columnsSansIds;
-
-    private String[] insertableColumns;
-    private String[] updatableColumns;
 
     Introspected(Class<?> clazz) throws IllegalAccessException, InstantiationException {
 
@@ -83,12 +71,12 @@ public class Introspected implements TableSpecs {
             Version versionAnnotation = field.getAnnotation(Version.class);
 
             if (versionAnnotation != null) {
-                this.versionColumnName = field.getName().toLowerCase();
+                String versionColumnName = field.getName().toLowerCase();
             } else if (idAnnotation != null) {
                 // Is it a problem that Class.getDeclaredFields() claims the fields are returned unordered?  We count on order.
                 idFcInfos.add(fcInfo);
                 GeneratedValue generatedAnnotation = field.getAnnotation(GeneratedValue.class);
-                isGeneratedId = (generatedAnnotation != null);
+                boolean isGeneratedId = (generatedAnnotation != null);
                 if (isGeneratedId && idFcInfos.size() > 1) {
                     throw new IllegalStateException("Cannot have multiple @Id annotations and @GeneratedValue at the same time.");
                 }
@@ -98,45 +86,9 @@ public class Introspected implements TableSpecs {
             if (enumAnnotation != null) {
                 fcInfo.setEnumConstants(enumAnnotation.value());
             }
-
-            Convert convertAnnotation = field.getAnnotation(Convert.class);
-            if (convertAnnotation != null) {
-                Class converterClass = convertAnnotation.converter();
-                if (!AttributeConverter.class.isAssignableFrom(converterClass)) {
-                    throw new RuntimeException(
-                            "Convert annotation only supports converters implementing AttributeConverter");
-                }
-                fcInfo.setConverter((AttributeConverter) converterClass.newInstance());
-            }
         }
 
         readColumnInfo(idFcInfos);
-
-        getInsertableColumns();
-        getUpdatableColumns();
-
-    }
-
-    public Object get(Object target, String columnName) throws IllegalAccessException {
-        FieldColumnInfo fcInfo = columnToField.get(columnName);
-        if (fcInfo == null) {
-            throw new RuntimeException("Cannot find field mapped to column " + columnName + " on type " + target.getClass().getCanonicalName());
-        }
-
-        Object value = fcInfo.field.get(target);
-
-        if (value == null) {
-            return value;
-        }
-
-        // Fix-up column value for enums, integer as boolean, etc.
-        if (fcInfo.getConverter() != null) {
-            value = fcInfo.getConverter().convertToDatabaseColumn(value);
-        } else if (fcInfo.enumConstants != null) {
-            value = (fcInfo.enumType == EnumType.ORDINAL ? ((Enum<?>) value).ordinal() : ((Enum<?>) value).name());
-        }
-
-        return value;
     }
 
     public void set(Object target, String columnName, Object value) throws IllegalAccessException, IOException, SQLException {
@@ -167,8 +119,6 @@ public class Introspected implements TableSpecs {
                 columnValue = fcInfo.enumConstants.get(columnValue);
             } else if (columnValue instanceof Clob) {
                 columnValue = TypeMapper.readClob((Clob) columnValue);
-            } else if ("PGobject".equals(columnType.getSimpleName()) && "citext".equalsIgnoreCase(((PGobject) columnValue).getType())) {
-                columnValue = ((PGobject) columnValue).getValue();
             } else if (columnValue instanceof java.sql.Date && fieldType == LocalDate.class) {
                 java.sql.Date date = (Date) columnValue;
                 columnValue = date.toLocalDate();
@@ -193,110 +143,12 @@ public class Introspected implements TableSpecs {
         return idColumnNames;
     }
 
-    public String[] getColumnsSansIds() {
-        return columnsSansIds;
-    }
-
-    public boolean hasGeneratedId() {
-        return isGeneratedId;
-    }
-
-    @Override
-    public boolean hasVersionColumn() {
-        return versionColumnName != null;
-    }
-
-    @Override
-    public String getVersionColumnName() {
-        return versionColumnName;
-    }
-
-    public String[] getInsertableColumns() {
-        if (insertableColumns != null) {
-            return insertableColumns;
-        }
-
-        LinkedList<String> columns = new LinkedList<String>();
-        if (hasGeneratedId()) {
-            columns.addAll(Arrays.asList(columnsSansIds));
-        } else {
-            columns.addAll(Arrays.asList(columnNames));
-        }
-
-        Iterator<String> iterator = columns.iterator();
-        while (iterator.hasNext()) {
-            if (!isInsertableColumn(iterator.next())) {
-                iterator.remove();
-            }
-        }
-
-        insertableColumns = columns.toArray(new String[0]);
-        return insertableColumns;
-    }
-
-    public String[] getUpdatableColumns() {
-        if (updatableColumns != null) {
-            return updatableColumns;
-        }
-
-        LinkedList<String> columns = new LinkedList<String>();
-        if (hasGeneratedId()) {
-            columns.addAll(Arrays.asList(columnsSansIds));
-        } else {
-            columns.addAll(Arrays.asList(columnNames));
-        }
-
-        Iterator<String> iterator = columns.iterator();
-        while (iterator.hasNext()) {
-            if (!isUpdatableColumn(iterator.next())) {
-                iterator.remove();
-            }
-        }
-
-        updatableColumns = columns.toArray(new String[0]);
-        return updatableColumns;
-    }
-
-    public boolean isInsertableColumn(String columnName) {
-        FieldColumnInfo fcInfo = columnToField.get(columnName);
-        return (fcInfo != null && fcInfo.insertable);
-    }
-
-    public boolean isUpdatableColumn(String columnName) {
-        FieldColumnInfo fcInfo = columnToField.get(columnName);
-        return (fcInfo != null && fcInfo.updatable);
-    }
-
-    public Object[] getActualIds(Object target) throws IllegalAccessException {
-        if (idColumnNames.length == 0) {
-            return null;
-        }
-
-        Object[] ids = new Object[idColumnNames.length];
-        int i = 0;
-        for (FieldColumnInfo fcInfo : idFieldColumnInfos) {
-            ids[i++] = fcInfo.field.get(target);
-        }
-        return ids;
-    }
-
-
     public String getTableName() {
         return tableName;
     }
 
-    public String getColumnNameForProperty(String propertyName) {
-        for (FieldColumnInfo fcInfo : columnToField.values()) {
-            if (fcInfo.field.getName().equalsIgnoreCase(propertyName)) {
-                return fcInfo.columnName;
-            }
-        }
-
-        return null;
-    }
-
     private void readColumnInfo(ArrayList<FieldColumnInfo> idFcInfos) {
-        idFieldColumnInfos = new FieldColumnInfo[idFcInfos.size()];
+        FieldColumnInfo[] idFieldColumnInfos = new FieldColumnInfo[idFcInfos.size()];
         idColumnNames = new String[idFcInfos.size()];
         int i = 0;
         int j = 0;
@@ -308,14 +160,12 @@ public class Introspected implements TableSpecs {
 
         columnNames = new String[columnToField.size()];
         columnTableNames = new String[columnNames.length];
-        columnsSansIds = new String[columnNames.length - idColumnNames.length];
         i = 0;
         j = 0;
         for (Entry<String, FieldColumnInfo> entry : columnToField.entrySet()) {
             columnNames[i] = entry.getKey();
             columnTableNames[i] = entry.getValue().columnTableName;
             if (!idFcInfos.contains(entry.getValue())) {
-                columnsSansIds[j] = entry.getKey();
                 ++j;
             }
             ++i;
@@ -324,7 +174,6 @@ public class Introspected implements TableSpecs {
 
     private void processColumnAnnotation(FieldColumnInfo fcInfo) {
         Field field = fcInfo.field;
-
         Column columnAnnotation = field.getAnnotation(Column.class);
         if (columnAnnotation != null) {
             fcInfo.columnName = columnAnnotation.name().toLowerCase();
@@ -332,50 +181,12 @@ public class Introspected implements TableSpecs {
             if (columnTableName != null && columnTableName.length() > 0) {
                 fcInfo.columnTableName = columnTableName.toLowerCase();
             }
-
-            fcInfo.insertable = columnAnnotation.insertable();
-            fcInfo.updatable = columnAnnotation.updatable();
         } else {
             fcInfo.columnName = field.getName().toLowerCase();
         }
-
-        Transient transientAnnotation = field.getAnnotation(Transient.class);
-        if (transientAnnotation == null) {
-            columnToField.put(fcInfo.columnName, fcInfo);
-        }
-    }
-
-    public <T> void updateGeneratedIdValue(T item, Object object) throws IllegalAccessException, SQLException, IOException {
-        if (hasGeneratedId()) {
-            set(item, idColumnNames[0], object);
-        } else {
-            // TODO: log?
-        }
-    }
-
-    public String[] getGeneratedIdColumnNames() {
-        if (isGeneratedId) {
-            return idColumnNames;
-        } else {
-            return null;
-        }
-    }
-
-    public boolean isPersisted(Object target) throws IllegalAccessException {
-        if (this.hasGeneratedId()) {
-            Long id = (Long) this.get(target, this.getGeneratedIdColumnNames()[0]);
-            return id != null && id > 0l;
-        }
-        return false;
-    }
-
-    public long getIdColumnValue(Object target) throws IllegalAccessException {
-        return (long) this.get(target, this.getGeneratedIdColumnNames()[0]);
     }
 
     private static class FieldColumnInfo {
-        private boolean updatable;
-        private boolean insertable;
         private String columnName;
         private String columnTableName;
         private Field field;
@@ -400,7 +211,7 @@ public class Introspected implements TableSpecs {
 
         <T extends Enum<?>> void setEnumConstants(EnumType type) {
             this.enumType = type;
-            enumConstants = new HashMap<Object, Object>();
+            enumConstants = new HashMap<>();
             @SuppressWarnings("unchecked")
             T[] enums = (T[]) field.getType().getEnumConstants();
             for (T enumConst : enums) {

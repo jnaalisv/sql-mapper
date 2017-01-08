@@ -23,25 +23,6 @@ public final class CachingSqlStringBuilder {
         }
     });
 
-    private static Map<String, String> updateStatementCache = Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_SIZE) {
-        private static final long serialVersionUID = -5324251353646078607L;
-
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
-            return this.size() > CACHE_SIZE;
-        }
-    });
-
-    private static Map<String, String> createStatementCache = Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_SIZE) {
-        private static final long serialVersionUID = 4559270460685275064L;
-
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
-            return this.size() > CACHE_SIZE;
-        }
-    });
-
-
     private CachingSqlStringBuilder() {}
 
     public static <T> String getColumnsCsv(TableSpecs tableSpecs, String... tablePrefix) {
@@ -71,28 +52,6 @@ public final class CachingSqlStringBuilder {
 
     public static String constructWhereSql(String[] idColumnNames) {
         return SqlStringBuilder.constructWhereSql(idColumnNames);
-    }
-
-    public static String createStatementForUpdateSql(TableSpecs tableSpecs) {
-        String sql = updateStatementCache.get(tableSpecs.getTableName());
-        if (sql == null) {
-            sql = SqlStringBuilder.createStatementForUpdateSql(tableSpecs);
-            updateStatementCache.put(tableSpecs.getTableName(), sql);
-        }
-        return sql;
-    }
-
-    public static String createStatementForInsertSql(TableSpecs tableSpecs) {
-        String sql = createStatementCache.get(tableSpecs.getTableName());
-        if (sql == null) {
-            sql = SqlStringBuilder.createStatementForInsertSql(tableSpecs);
-            createStatementCache.put(tableSpecs.getTableName(), sql);
-        }
-        return sql;
-    }
-
-    public static String deleteObjectByIdSql(TableSpecs tableSpecs) {
-        return SqlStringBuilder.deleteObjectByIdSql(tableSpecs);
     }
 
     public static String getObjectByIdSql(Class<?> type) throws IllegalAccessException, InstantiationException {

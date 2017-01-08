@@ -21,7 +21,6 @@ ext {
 
 dependencies {
     compile "org.slf4j:slf4j-api:$slf4jVersion"
-    compile "org.postgresql:postgresql:9.4.1209.jre7"
     compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final"
 
     testCompile "junit:junit:$junitVersion"
